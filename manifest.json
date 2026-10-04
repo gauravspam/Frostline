@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Aurora — Beautiful New Tab",
+  "version": "1.0.3",
+  "description": "Aurora: a beautiful new tab with floating-glass widgets, focus tools and daily inspiration. 1:1 Frost-style recreation.",
+  "permissions": ["storage", "geolocation", "system.cpu", "system.memory"],
+  "host_permissions": ["https://api.github.com/*", "https://api.open-meteo.com/*", "https://images.unsplash.com/*", "https://api.unsplash.com/*"],
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "background": {
+    "service_worker": "js/background.js"
+  }
+}

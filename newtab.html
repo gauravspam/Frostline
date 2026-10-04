@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Aurora — New Tab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="bg-layer"></div>
+<div id="bg-tint"></div>
+<div id="bg-vignette"></div>
+
+<!-- Top bar -->
+<header id="topbar">
+  <div id="ai-orbit-wrap">
+    <div id="ai-agents-btn" role="button" tabindex="0" title="AI Agents" aria-label="AI Agents">
+      <span class="spark">✦</span><span class="x">✕</span>
+    </div>
+    <div id="ai-orbit"></div>
+  </div>
+  <div id="top-right">
+    <button class="circle-btn dark-glass" id="google-apps-btn" title="Google apps">G</button>
+    <button class="circle-btn dark-glass hidden" id="fs-btn" title="Toggle Full Screen">⛶</button>
+    <button class="circle-btn dark-glass" id="settings-btn" title="Settings">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+  </div>
+  <div id="gapps-panel" class="hidden">
+    <a href="https://mail.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><span>Gmail</span></a>
+    <a href="https://drive.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2L4 14l8 8 8-8L12 2z"/></svg><span>Drive</span></a>
+    <a href="https://docs.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7H6V7h7v2zm0 4H6v-2h7v2zm0 4H6v-2h7v2z"/></svg><span>Docs</span></a>
+    <a href="https://sheets.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM6 7h4v2H6V7zm0 4h4v2H6v-2zm0 4h4v2H6v-2z"/></svg><span>Sheets</span></a>
+    <a href="https://slides.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 16H7V7h10v12zM9 9h2v2H9V9zm4 0h2v2h-2V9zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2z"/></svg><span>Slides</span></a>
+    <a href="https://calendar.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 12H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2z"/></svg><span>Calendar</span></a>
+    <a href="https://youtube.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg><span>YouTube</span></a>
+    <a href="https://maps.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><span>Maps</span></a>
+    <a href="https://photos.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg><span>Photos</span></a>
+    <a href="https://news.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7v-2h10v2z"/></svg><span>News</span></a>
+    <a href="https://translate.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 7.56 12.95 6 15.36 6 18h12c0-2.63-1.56-5.04-3.87-6.93zM18 13H6v-2h12v2z"/></svg><span>Translate</span></a>
+    <a href="https://keep.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM11 7h2v2h-2V7zm-4 0h2v2H7V7zm8 8H7v-2h8v2zm0-4H7v-2h8v2z"/></svg><span>Keep</span></a>
+    <a href="https://meet.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg><span>Meet</span></a>
+  </div>
+</header>
+
+<!-- Left widgets -->
+<aside id="sidebar">
+  <button class="widget dark-glass" data-modal="calendar-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+    <span class="w-text"><small id="w-day-name">MONDAY</small><strong id="w-date">September 28th</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="weather-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19a4.5 4.5 0 0 0 0-9 6 6 0 0 0-11.5 1.5A4 4 0 0 0 7 19h10.5z"/><path d="M8 22v-2M12 22v-3M16 22v-2"/></svg></span>
+    <span class="w-text"><small>Weather</small><strong id="w-weather">Thane</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="tasks-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M9 12l2 2 4-5"/></svg></span>
+    <span class="w-text"><small>Tasks</small><strong id="w-tasks">2 pending</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="pomodoro-modal">
+    <span class="w-icon red"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="7"/><path d="M12 10v3l2 2M9 3h6"/></svg></span>
+    <span class="w-text"><small>Focus</small><strong id="w-focus">Ready to focus?</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="github-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></span>
+    <span class="w-text"><small>Github</small><strong id="w-github">All Caught Up</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="clock-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></span>
+    <span class="w-text"><small>World Clock</small><strong id="w-world">No clocks</strong></span>
+  </button>
+  <button class="widget dark-glass" data-modal="notes-modal">
+    <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/></svg></span>
+    <span class="w-text"><small>Notes</small><strong id="w-notes">Click to view</strong></span>
+  </button>
+</aside>
+
+<!-- Center -->
+<main id="center">
+  <div id="greeting">GOOD AFTERNOON</div>
+  <div id="clock-card">
+    <div id="analog">
+      <div class="hand hour" id="h-hour"></div>
+      <div class="hand minute" id="h-minute"></div>
+      <div class="hand second" id="h-sec"></div>
+      <div class="dot"></div>
+    </div>
+    <div id="rectwrap">
+      <div id="rect-sheen"><i></i></div>
+      <div id="mini-face">
+        <div class="mhand mh" id="m-hour"></div>
+        <div class="mhand mm" id="m-minute"></div>
+        <div class="mhand ms" id="m-sec"></div>
+        <div class="mdot"></div>
+      </div>
+      <svg id="rect-svg" viewBox="0 0 270 160" preserveAspectRatio="none"><rect id="rect-arc" x="2.5" y="2.5" width="265" height="155" rx="25.5" pathLength="100" stroke-dasharray="100" stroke-dashoffset="50"/></svg>
+    </div>
+    <div id="digital" class="hidden"><span id="d-h">08</span><span class="d-colon">:</span><span id="d-m">05</span><span id="d-ampm">AM</span></div>
+  </div>
+  <div id="quote-wrap">
+    <p id="quote">“Success comes from having dreams that are bigger than your fears.”</p>
+    <div id="quote-author">— BOBBY UNSER</div>
+  </div>
+</main>
+
+<!-- Dock -->
+<footer id="dock-wrap">
+  <div id="tooltip" class="hidden">YouTube</div>
+  <nav id="dock" class="dark-glass">
+    <a href="https://mail.google.com" class="dock-btn" data-name="Gmail" data-url="https://mail.google.com"><span class="gicon gmail">M</span></a>
+    <a href="https://youtube.com" class="dock-btn" data-name="YouTube" data-url="https://youtube.com"><span class="gicon yt">▶</span></a>
+    <a href="https://github.com" class="dock-btn" data-name="GitHub" data-url="https://github.com"><span class="gicon gh">◍</span></a>
+    <a href="https://x.com" class="dock-btn" data-name="X" data-url="https://x.com"><span class="gicon x">𝕏</span></a>
+    <a href="https://reddit.com" class="dock-btn" data-name="Reddit" data-url="https://reddit.com"><span class="gicon rd">●</span></a>
+    <a href="https://linkedin.com" class="dock-btn" data-name="LinkedIn" data-url="https://linkedin.com"><span class="gicon li">in</span></a>
+    <button class="dock-btn" id="dock-grid" data-name="All apps"><span class="gicon grid">▦</span></button>
+  </nav>
+</footer>
+
+<div id="photo-credit" class="dark-glass">Photo by <b>Greg Shield</b> on <b>Unsplash</b></div>
+
+<!-- Overlay -->
+<div id="overlay" class="hidden"></div>
+
+<!-- Modals -->
+<section id="tasks-modal" class="modal hidden">
+  <header><span class="m-icon">☑</span><h2>My Tasks</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="tasks-subrow"><div class="m-sub" id="tasks-count">2 OPEN</div><button id="tasks-clear">Clear done</button></div>
+    <div class="task-add"><input id="task-input" placeholder="Add a new task..." /><button id="task-add-btn">＋</button></div>
+    <ul id="task-list"></ul>
+  </div>
+</section>
+
+<section id="pomodoro-modal" class="modal hidden">
+  <header><span class="m-icon">◷</span><h2>Pomodoro</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="t-time">05:00</div>
+    <div id="t-bar"><i id="t-fill"></i></div>
+    <div id="t-steps">
+      <div class="t-step"><span>Hours</span><span><button class="t-stepbtn" data-u="h" data-d="-1">−</button><b id="t-h">0</b><button class="t-stepbtn" data-u="h" data-d="1">＋</button></span></div>
+      <div class="t-step"><span>Minutes</span><span><button class="t-stepbtn" data-u="m" data-d="-1">−</button><b id="t-m">5</b><button class="t-stepbtn" data-u="m" data-d="1">＋</button></span></div>
+      <div class="t-step"><span>Seconds</span><span><button class="t-stepbtn" data-u="s" data-d="-1">−</button><b id="t-s">0</b><button class="t-stepbtn" data-u="s" data-d="1">＋</button></span></div>
+    </div>
+    <div id="t-controls">
+      <button id="t-play" class="play-btn">▶</button>
+      <button id="t-reset" class="round-btn" title="Reset">↻</button>
+      <button id="t-plus5" class="round-btn" title="Add 5 minutes">+5</button>
+    </div>
+  </div>
+</section>
+
+<section id="github-modal" class="modal wide hidden">
+  <header><span class="m-icon">◍</span><h2>GitHub</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="gh-userrow"><input id="gh-user-input" placeholder="GitHub username…" /><button id="gh-open" class="icon-btn" title="Open profile">↗</button><button id="gh-refresh" class="icon-btn" title="Refresh from GitHub">↻</button></div>
+    <div id="gh-pickrow"><div class="csel"><button id="gh-repo-btn"></button></div><div class="csel"><button id="gh-branch-btn"></button></div></div>
+    <div id="gh-err" class="hidden"></div>
+    <div id="gh-statsrow"><div><b id="gh-total">0</b><small>recent commits</small></div><div><b id="gh-streak">0</b><small>recent pushes</small></div><div><b id="gh-week">0</b><small>active repos</small></div></div>
+    <div id="gh-langbar"></div>
+    <ul id="gh-langlist"></ul>
+    <div id="gh-commlabel">Recent commits <span id="gh-updated"></span></div>
+    <ul id="gh-commits"></ul>
+    <div id="gh-notif-sec" class="hidden"><div class="m-sub">README</div><div id="gh-readme"></div></div>
+  </div>
+</section>
+
+<section id="weather-modal" class="modal hidden">
+  <header><span class="m-icon">☁</span><h2>Weather</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="wx-searchrow"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="wx-input" placeholder="Search city…" /><div id="wx-units"><button data-u="c" class="on">°C</button><button data-u="f">°F</button></div></div>
+    <div id="weather-err" class="hidden">City not found. Try another name.</div>
+    <div id="weather-hero"><div><div id="weather-big">--</div><div id="weather-detail">Loading…</div></div><span id="wx-icon"></span></div>
+    <div class="wx-seclabel">Today, hourly</div>
+    <div id="weather-hourly"></div>
+    <div id="wx-botrow"><div class="wx-col"><div class="wx-seclabel" id="wx-arc-label">Sunrise &amp; sunset</div><div id="wx-sun"></div></div><div class="wx-col"><div class="wx-seclabel">Next 5 days</div><div id="wx-daily"></div></div></div>
+  </div>
+</section>
+
+<section id="calendar-modal" class="modal hidden">
+  <header><span class="m-icon">📅</span><h2>Date & Calendar</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="cal-titlerow"><div id="cal-title"></div><div id="cal-nav"><button id="cal-prev">‹</button><button id="cal-next">›</button></div></div>
+    <div id="cal-sub"></div>
+    <div id="cal-progress"><i></i></div>
+    <div id="cal-grid"></div>
+    <div id="cal-sel" class="hidden"></div>
+    <ul id="cal-coming"></ul>
+  </div>
+</section>
+
+<section id="clock-modal" class="modal hidden">
+  <header><span class="m-icon">🌐</span><h2>World Clock</h2><button class="m-close">✕</button></header>
+  <div class="m-body"><div id="clock-searchwrap"><div class="task-add"><input id="clock-input" placeholder="Search cities…" autocomplete="off" /><button id="clock-add">＋</button></div></div><ul id="clock-list"></ul></div>
+</section>
+
+<section id="notes-modal" class="modal hidden">
+  <header><span class="m-icon">📝</span><h2>My Notes</h2><button class="m-close">✕</button></header>
+  <div class="m-body">
+    <div id="notes-top"><div id="notes-searchwrap"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="notes-search" placeholder="Search…" /></div><span id="notes-count">0 notes</span></div>
+    <div id="notes-quick"><div id="note-toolsbar"><button data-fmt="bold" title="Bold"><b>B</b></button><button data-fmt="italic" title="Italic"><i>I</i></button><button data-fmt="dash" title="Bullet list">•</button><button data-fmt="num" title="Numbered list">1.</button><button data-fmt="task" title="Task list">☑</button><span class="nt-sep"></span><button data-h="1" title="Heading 1">H1</button><button data-h="2" title="Heading 2">H2</button><button data-h="3" title="Heading 3">H3</button><div id="note-mode"><button id="note-mode-btn" title="Toggle preview"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div><textarea id="notes-input" rows="3" placeholder="Quick note… (Ctrl+Enter to save)"></textarea><div id="note-preview" class="note-body hidden"></div><div id="notes-addrow"><button id="notes-cancel" class="hidden">Cancel</button><button id="notes-add">＋ Add</button></div></div>
+    <ul id="notes-list"></ul>
+    <div id="notes-empty">No notes yet</div>
+  </div>
+</section>
+
+<section id="shortcuts-modal" class="modal hidden">
+  <header><span class="m-icon">▦</span><h2>All Shortcuts</h2><button class="m-close">✕</button></header>
+  <div class="m-body"><ul id="shortcuts-list"></ul><div class="task-add"><input id="shortcut-name" placeholder="Name" /><input id="shortcut-url" placeholder="https://…" /><button id="shortcut-add">＋</button></div><p class="muted small">Right-click dock items to edit/delete</p></div>
+</section>
+
+<section id="settings-modal" class="modal settings-modal hidden">
+  <header class="set-head"><h2 id="settings-title">Display</h2><button class="m-close">✕</button></header>
+  <nav class="set-tabs">
+    <button data-tab="background" title="Background" aria-label="Background"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5-9 9"/></svg></button>
+    <button class="active" data-tab="display" title="Display" aria-label="Display"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></button>
+    <button data-tab="weather" title="Weather" aria-label="Weather"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></button>
+    <button data-tab="widgets" title="Widgets" aria-label="Widgets"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></button>
+    <button data-tab="github" title="Github" aria-label="Github"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></button>
+    <button data-tab="prefs" title="Prefs" aria-label="Prefs"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="18" r="2"/></svg></button>
+    <button data-tab="discard" title="Discard" aria-label="Discard"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+    <button data-tab="dimmer" title="Dimmer" aria-label="Dimmer"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <button data-tab="yt" title="YT Full" aria-label="YT Full"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M10 8.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8"/></svg></button>
+    <button data-tab="backup" title="Backup" aria-label="Backup"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
+  </nav>
+  <div class="set-scroll">
+    <div class="set-card buy-card">Enjoying Aurora? Support updates!<button class="buy-btn">☕&nbsp;&nbsp; Buy me a coffee</button></div>
+
+    <div class="set-pane" id="pane-background">
+      <div class="set-card">
+        <div class="bg-tabs">
+          <button class="active" data-bg="unsplash">Unsplash</button>
+          <button data-bg="upload">Upload</button>
+          <button data-bg="color">Color</button>
+          <button data-bg="video">Video</button>
+        </div>
+        <div id="bg-pane-unsplash">
+          <label>Unsplash API Key (Optional)<input id="set-unsplash-key" placeholder="Leave empty for the free daily rotation" autocomplete="off" /></label>
+          <p class="muted small">No key needed — Aurora rotates free Unsplash photos by default. Add your own key from <a href="https://unsplash.com/developers" target="_blank">Unsplash Developers</a> for fresh random photos.</p>
+          <label>Refresh Interval<select id="set-refresh"><option value="day">Once a Day</option><option value="hour">Every Hour</option><option value="tab">Every New Tab</option><option value="week">Once a Week</option><option value="always">Always</option><option value="never">Never</option></select></label>
+          <button id="bg-refresh-now">↻ Refresh now</button>
+          <p class="muted small" id="bg-status"></p>
+          <div class="fld-label">Free rotation</div>
+          <div id="bg-grid"></div>
+        </div>
+        <div id="bg-pane-upload" class="hidden">
+          <label>Upload <input type="file" id="set-upload" accept="image/*,video/*" /></label>
+        </div>
+        <div id="bg-pane-color" class="hidden">
+          <label>Color / Gradient <input id="set-color" placeholder="#1a202c or linear-gradient(...)" /></label>
+        </div>
+        <div id="bg-pane-video" class="hidden">
+          <label>Video file <input type="file" id="set-video" accept="video/*" /></label>
+        </div>
+        <label>Photo credit <input id="set-credit" placeholder="Photo by ... on Unsplash" /></label>
+      </div>
+    </div>
+    <div class="set-pane active" id="pane-display">
+      <div class="set-card"><h4>Clock Style</h4>
+        <div id="clock-pick"></div>
+        <div id="clock-size-row"><span>Clock size</span><input type="range" id="set-clock-size" min="70" max="150" step="5" value="100"><b id="clock-size-val">100%</b></div>
+        <div class="pills" id="tf-seg"><span class="pills-label">Time format</span><span class="pills-btns"><button data-tf="12h">12h</button><button data-tf="24h">24h</button></span></div>
+      </div>
+      <div class="set-card"><h4>Appearance</h4>
+        <div class="fld-label">Theme</div>
+        <div id="theme-pick"><button class="theme-tile" data-t="auto"><span class="theme-thumb"></span>System</button><button class="theme-tile" data-t="dark"><span class="theme-thumb"></span>Dark</button><button class="theme-tile" data-t="light"><span class="theme-thumb"></span>Light</button></div>
+        <div class="fld-label">Accent color</div>
+        <div id="accent-row"></div>
+      </div>
+      <div class="set-card"><div id="display-toggles"></div>
+        <label>Custom greeting <input id="set-custom-greet" placeholder="e.g. Enjoy your day" /></label>
+        <label>Your name <input id="set-name" placeholder="Your name for greeting" /></label>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-weather">
+      <div class="set-card"><h4>Weather</h4>
+        <div class="seg" id="wx-mode-seg"><button data-m="auto">Auto</button><button data-m="city">Manual</button></div>
+        <div id="wx-city-row"><label>City <input id="set-wx-city" placeholder="e.g. London" /></label></div>
+        <label>City (lat,lon) <input id="set-loc" placeholder="28.6,77.2" /></label>
+        <label>Units <select id="set-units"><option value="c">°C</option><option value="f">°F</option></select></label>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-widgets">
+      <div class="set-card"><h4>Dashboard Widgets</h4><div id="widget-toggles"></div>
+        <div id="ui-toggles-2"></div>
+        <p class="muted small">Click widgets on the left to expand them into full view</p>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-github">
+      <div class="set-card"><h4>GitHub Username (Public)</h4>
+        <input id="gh-input" placeholder="gauravspam" />
+        <p class="muted small">Required for fetching public contributions.</p>
+        <h4>Personal Access Token</h4>
+        <input id="gh-token" type="password" placeholder="••••••••••••••••••••••••" />
+        <p class="muted small">Required for private repos, notifications, and higher rate limits.<br/><a href="https://github.com/settings/tokens" target="_blank">Generate a classic token</a> (Scopes: repo, notifications, user)</p>
+        <div class="sec-note"><b>Security Note:</b> This token is stored <i>only</i> in your browser's local storage and is never sent to any server other than GitHub API.</div>
+        <div id="gh-toggles"></div>
+        <button id="gh-save2">Save</button>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-prefs">
+      <div class="set-card"><h4>Quick Access Dock</h4><div id="dock-toggles"></div><p class="muted small">Right-click dock items to edit/delete</p>
+      </div>
+      <div class="set-card">
+        <h4>UI Options</h4><div id="ui-toggles"></div>
+      </div>
+      <div class="set-card">
+        <h4>Quote Category</h4><select id="set-quote-cat"><option>Bhagavad Gita</option><option>Motivation</option><option>Stoicism</option><option>Buddhism</option><option>General</option></select>
+        <p class="muted small">Applies when Daily Inspiration widget is enabled</p>
+        <h4>Holiday Country</h4><input id="set-holiday" value="India" />
+        <p class="muted small">Override auto-detection for calendar holidays</p>
+      </div>
+      <div class="set-card"><h4>AI Agents</h4><ul id="agents-list"></ul>
+        <div class="task-add"><input id="agent-name" placeholder="Name" /><input id="agent-url" placeholder="https://…" /><button id="agent-add">＋</button></div>
+        <button id="orbit-reset" class="mini-btn">Reset orbit layout</button>
+        <div id="orbit-geom"></div>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-discard">
+      <div class="set-card"><h4>Tab Discard</h4><div id="disc-toggles"></div>
+        <div class="seg" id="disc-presets"><button data-p="gentle">Gentle</button><button data-p="balanced">Balanced</button><button data-p="aggressive">Aggressive</button></div>
+      </div>
+      <div class="set-card">
+        <div id="disc-sliders"></div>
+        <div id="disc-toggles2"></div>
+      </div>
+      <div class="set-card">
+        <label>Whitelist <span class="muted small">Comma-separated hostnames to never discard</span><textarea id="disc-wl" placeholder="e.g. meet.google.com, docs.google.com"></textarea></label>
+        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-dimmer">
+      <div class="set-card"><h4>Dimmer</h4><div id="dim-toggles"></div>
+        <div class="seg" id="dim-presets"><button data-p="night">Night</button><button data-p="reading">Reading</button><button data-p="movie">Movie</button></div>
+        <div class="seg" id="dim-mode"><button data-m="overlay">Page Overlay</button><button data-m="media-only">Media Only</button></div>
+        <div id="dim-colors"></div>
+        <div id="dim-sliders"></div>
+        <div id="dim-toggles2"></div>
+      </div>
+      <div class="set-card">
+        <div id="dim-sched"></div>
+      </div>
+      <div class="set-card">
+        <h4>Per-site overrides</h4><ul id="dim-sites"></ul>
+        <div class="task-add"><input id="dim-site-input" placeholder="e.g. reddit.com" /><button id="dim-site-add">＋</button></div>
+        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-yt">
+      <div class="set-card"><h4>YouTube Fullscreen</h4><div id="yt-toggles"></div>
+        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
+      </div>
+    </div>
+    <div class="set-pane" id="pane-backup">
+      <div class="set-card"><h4>Backup &amp; Restore</h4><p class="muted small">Export your settings to a JSON file to back them up or share between devices. Note: custom backgrounds and video are not included.</p>
+        <div class="exp-row"><button id="btn-export">⤓ Export</button><button id="btn-import">⤒ Import</button><input type="file" id="file-import" accept="application/json" class="hidden"/></div>
+        <p class="muted small" id="backup-status"></p>
+      </div>
+    </div>
+    <p class="muted small" style="text-align:center;opacity:.5">Aurora v1.0.3</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div id="ai-panel" class="hidden dark-glass">
+  <h3>AI Agents</h3>
+  <div class="ai-grid">
+    <a href="https://chat.openai.com">ChatGPT</a><a href="https://claude.ai">Claude</a><a href="https://gemini.google.com">Gemini</a><a href="https://grok.com">Grok</a><a href="https://perplexity.ai">Perplexity</a><a href="https://deepseek.com">DeepSeek</a><a href="https://copilot.microsoft.com">Copilot</a>
+  </div>
+</div>
+
+<div id="url-preview" class="hidden"></div>
+<ul id="clock-presets"></ul>
+<ul id="wx-drop"></ul>
+<ul id="gh-repo-drop" class="cdrop"></ul>
+<ul id="gh-branch-drop" class="cdrop"></ul>
+<script src="js/app.js"></script>
+</body>
+</html>
