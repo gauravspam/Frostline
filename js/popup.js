@@ -149,13 +149,17 @@ function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
   btn.onclick = () => {
     btn.classList.add('busy');
     try {
-      chrome.runtime.sendMessage({ cmd: resetCmd }, () => {
+      chrome.runtime.sendMessage({ cmd: resetCmd }, (r) => {
         void chrome.runtime.lastError;
         btn.classList.remove('busy');
-        // Wait for reset to complete (includes verification delay) before checking status
-        setTimeout(() => {
-          try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
-        }, 300);
+        // The reset response already carries its final verification result,
+        // so show that instead of racing a separate status request against it.
+        if(r&&r.state)show(r.state);
+        else{
+          setTimeout(() => {
+            try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
+          }, 300);
+        }
       });
     } catch { btn.classList.remove('busy'); }
   };

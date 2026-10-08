@@ -203,13 +203,19 @@ async function dimProbe(tabId){
   try{
     const r=await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{
       var h=document.documentElement,g=getComputedStyle(h),b=getComputedStyle(h,'::before');
-      var v=document.querySelector('video');
-      var vf=v?getComputedStyle(v).filter:'none';
-      // Detect Shade media-scope fingerprint: brightness < 1 + optional sepia/saturate/blur
-      var shadeMedia=false;
-      if(vf!=='none'){
-        var m=vf.match(/brightness\(([\d.]+)\)/);
-        if(m&&parseFloat(m[1])<0.98)shadeMedia=true;
+      var vs=document.querySelectorAll('#movie_player video');
+      if(!vs.length)vs=document.querySelectorAll('video');
+      var vf='none',shadeMedia=false;
+      for(var i=0;i<vs.length;i++){
+        try{
+          var f=getComputedStyle(vs[i]).filter;
+          if(i===0)vf=f;
+          // Detect Shade media-scope fingerprint: brightness < 1 + optional sepia/saturate/blur
+          if(f!=='none'){
+            var m=f.match(/brightness\(([\d.]+)\)/);
+            if(m&&parseFloat(m[1])<0.98){shadeMedia=true;break;}
+          }
+        }catch(e){}
       }
       return{ov:h.classList.contains('frostline-ov'),dm:h.classList.contains('frostline-darkdm'),
         bd:b.display,blur:g.getPropertyValue('--frostline-ov-blur').trim(),
@@ -242,6 +248,9 @@ function dimMismatch(p,cfg){
     return overlay||shadeMedia;
   }
   if(e.scope==='media')return !shadeMedia;
+  // Windowed Theater intentionally clears the page overlay, so its absence
+  // is the expected state rather than drift.
+  if(p.th)return false;
   return !overlay;
 }
 async function dimVerifyAll(){
@@ -283,16 +292,26 @@ async function dimResetAll(){
   await dimApplyAll();
   // Allow time for CSS to settle, then verify
   await new Promise(r=>setTimeout(r,150));
-  await dimVerifyAll();
-  return{ok:true,reset:n};
+  const state=await dimVerifyAll();
+  return{ok:true,reset:n,state};
 }
 // Frostline Theater engine (YouTube: windowed fullscreen)
-const TH_DEF={enabled:0,wfs:1,remember:1,shortcut:1};
-async function theaterCfg(){try{const o=await chrome.storage.local.get('frostline_ytCfg');const c=Object.assign({},TH_DEF,o.frostline_ytCfg||{});if(typeof c.wfs!=='number')c.wfs=c.wfs?1:0;return c;}catch{return Object.assign({},TH_DEF,{wfs:0});}}
+const TH_DEF={enabled:0,wfs:0,remember:1,shortcut:1};
+async function theaterCfg(){try{const o=await chrome.storage.local.get('frostline_ytCfg');const c=Object.assign({},TH_DEF,o.frostline_ytCfg||{});if(typeof c.wfs!=='number')c.wfs=c.wfs?1:0;return c;}catch{return Object.assign({},TH_DEF);}}
 function theaterVid(url){try{const u=new URL(url||'');const h=(u.hostname||'').toLowerCase();if(h.includes('youtube.com')){if(u.pathname==='/watch')return u.searchParams.get('v')||'';if(u.pathname.indexOf('/shorts/')===0)return u.pathname.split('/')[2]||'';return '';}if(h==='youtu.be'||h.endsWith('.youtu.be'))return (u.pathname||'').replace(/^\//,'').split('/')[0]||'';return '';}catch{return '';}}
 function theaterIsYT(url){return /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch|shorts)|youtu\.be\/)/i.test(url||'');}
 async function theaterMem(){try{const o=await chrome.storage.local.get('frostline_theaterMem');return (o&&o.frostline_theaterMem)||{};}catch{return {};}}
 async function theaterMemSave(mem){try{await chrome.storage.local.set({frostline_theaterMem:mem||{}});}catch{}}
+// Apply and verification must use the same effective mode. Remembered
+// per-video state overrides the global switch, so checking the global switch
+// alone reports a correctly remembered page as mismatched.
+async function theaterEffWfs(cfg,url){
+  const vid=theaterVid(url||'');
+  if(cfg.remember&&vid){
+    try{const mem=await theaterMem();if(mem&&mem[vid])return{vid,wfs:mem[vid].wfs?1:0};}catch{}
+  }
+  return{vid,wfs:!!cfg.wfs};
+}
 // Tooltip pill for the injected Windowed-fullscreen button. Values are a 1:1
 // transcription of YouTube's own modern (ytp-delhi-modern) control tooltip:
 // container font 118%/500/15px, frosted wrapper rgba(0,0,0,.3) + blur(16px) +
@@ -315,11 +334,11 @@ function theaterCss(cfg){
   if(cfg.wfs)css+='html.frostline-th-wfs #primary,html.frostline-th-wfs #player-container-outer,html.frostline-th-wfs ytd-watch-flexy{width:100%!important;max-width:100%!important}';
   // inset:0 against a fixed root sizes the player to the viewport box without
   // pulling in the scrollbar gutter that a viewport width would add.
-  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;z-index:2147483647!important}';
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;transform:none!important;z-index:2147483647!important}';
   // YouTube sizes the inner video layer from the player's own aspect-ratio box,
   // so pinning the player alone leaves the frame letterboxed and offset inside
   // the viewport. Let the video layer fill the box and keep the frame intact.
-  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;object-fit:contain!important}';
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;transform:none!important;object-fit:contain!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #content{padding-top:0!important}';
   css+=FROSTLINE_TIP_CSS;
   return{css};
@@ -384,12 +403,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='15'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='16'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='15';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='16';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -411,7 +430,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='15')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='16')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -442,14 +461,9 @@ async function theaterApply(tabId,cfg,url){
       if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}theaterCssCache.delete(tabId);}
       return{ok:true,skipped:true};
     }
-    let eff=Object.assign({},cfg);
-    const vid=theaterVid(url||'');
-    if(cfg.remember&&vid){
-      try{
-        const mem=await theaterMem();
-        if(mem&&mem[vid]){eff.wfs=mem[vid].wfs?1:0;}
-      }catch{}
-    }
+    const memWfs=await theaterEffWfs(cfg,url);
+    const vid=memWfs.vid;
+    let eff=Object.assign({},cfg,{wfs:memWfs.wfs?1:0});
     if(!eff.enabled){
       try{await chrome.scripting.executeScript({target:{tabId:tabId},func:frostlineTheaterOff});}catch{}
       const old2=theaterCssCache.get(tabId);
@@ -505,7 +519,7 @@ async function theaterVerifyAll(){
   for(const t of tabs){
     if(!theaterIsYT(t.url||''))continue;
     if(t.discarded)continue;
-    try{const p=await theaterProbe(t.id);if(theaterMismatch(p,cfg))bad.push(t.id);}catch{}
+    try{const p=await theaterProbe(t.id);const eff=Object.assign({},cfg,{wfs:(await theaterEffWfs(cfg,t.url||'')).wfs?1:0});if(theaterMismatch(p,eff))bad.push(t.id);}catch{}
   }
   const st={mismatch:bad.length>0,ts:Date.now(),tabs:bad.length};
   try{await chrome.storage.local.set({frostline_theaterState:st});}catch{}
@@ -528,11 +542,11 @@ async function theaterResetAll(){
   }
   await theaterApplyAll();
   await new Promise(r=>setTimeout(r,150));
-  await theaterVerifyAll();
-  return{ok:true,reset:n};
+  const state=await theaterVerifyAll();
+  return{ok:true,reset:n,state};
 }
 chrome.tabs.onActivated.addListener(async info=>{try{const id=info&&info.tabId;if(!id)return;const dc=await dimCfg();await dimApply(id,dc);let url='';try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}const tc=await theaterCfg();await theaterApply(id,tc,url);await dimVerifyAll();await theaterVerifyAll();}catch{}});
-chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info&&info.status==='complete'){dimCfg().then(cfg=>dimApply(id,cfg));(async()=>{try{let url=(tab&&tab.url)||'';if(!url){try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}}const c=await theaterCfg();await theaterApply(id,c,url);}catch{}})();dimVerifyAll();theaterVerifyAll();}});
+chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info&&info.status==='complete'){(async()=>{try{const dc=await dimCfg();await dimApply(id,dc);}catch{}try{let url=(tab&&tab.url)||'';if(!url){try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}}const tc=await theaterCfg();await theaterApply(id,tc,url);}catch{}try{await dimVerifyAll();await theaterVerifyAll();}catch{}})();}});
 // YouTube is an SPA - internal navigation doesn't fire onUpdated. Use webNavigation
 // to re-verify after each YouTube page transition.
 try{chrome.webNavigation.onCompleted.addListener(async d=>{if(!d||!d.url||!theaterIsYT(d.url))return;try{const dc=await dimCfg();await dimApply(d.tabId,dc);const tc=await theaterCfg();await theaterApply(d.tabId,tc,d.url);await dimVerifyAll();await theaterVerifyAll();}catch{}});}catch{}
@@ -540,7 +554,7 @@ function setupDiscardMenus(){try{const contexts=['page'];if(chrome.contextMenus.
   chrome.contextMenus.create({id:'frostline-disc',title:'Discard Tabs',contexts});
   [['this','Discard this tab'],['right','Discard tabs to the right'],['left','Discard tabs to the left'],['others','Discard all other tabs'],['release','Release all tabs']].forEach(([id,title])=>chrome.contextMenus.create({id:'frostline-disc-'+id,parentId:'frostline-disc',title,contexts}));
 });}catch{}}
-chrome.runtime.onInstalled.addListener(details=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();try{if(details&&details.reason==='install'&&chrome.storage&&chrome.storage.local){chrome.storage.local.get(null,all=>{try{const set={};if(!all||!('frostline_discardCfg' in all))set.frostline_discardCfg=Object.assign({},DISC_DEF,{enabled:1});if(!all||!('frostline_ytCfg' in all))set.frostline_ytCfg={enabled:1,wfs:1,remember:1,shortcut:1};if(!all||!('frostline_dimmerCfg' in all))set.frostline_dimmerCfg={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:1,reader:0,blur:0},edit:'dimmer',mode:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};if(Object.keys(set).length)chrome.storage.local.set(set);}catch{}});}}catch{}dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
+chrome.runtime.onInstalled.addListener(details=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();try{if(details&&details.reason==='install'&&chrome.storage&&chrome.storage.local){chrome.storage.local.get(null,all=>{try{const set={};if(!all||!('frostline_discardCfg' in all))set.frostline_discardCfg=Object.assign({},DISC_DEF,{enabled:1});if(!all||!('frostline_ytCfg' in all))set.frostline_ytCfg={enabled:1,wfs:0,remember:1,shortcut:1};if(!all||!('frostline_dimmerCfg' in all))set.frostline_dimmerCfg={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:1,reader:0,blur:0},edit:'dimmer',mode:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};if(Object.keys(set).length)chrome.storage.local.set(set);}catch{}});}}catch{}dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
 chrome.runtime.onStartup.addListener(()=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
 async function workerCompletePomo(){try{const o=await chrome.storage.local.get('frostline_pomo');const p=o&&o.frostline_pomo;if(!p||!p.running||!p.endAt)return;const done={base:p.base||0,running:false,endAt:0,left:0};await chrome.storage.local.set({frostline_pomo:done});try{chrome.runtime.sendMessage({cmd:'pomo-beep'});}catch{}try{chrome.notifications.create({type:'basic',title:'Focus session complete',message:'Pomodorodinha timer finished - nice work!',iconUrl:chrome.runtime.getURL('assets/icon128.png'),silent:false});}catch{}}catch{}}
 chrome.alarms.onAlarm.addListener(a=>{if(!a)return;if(a.name==='frostline-discard'){autoDiscard();return;}if(a.name==='pomo-end'){workerCompletePomo();return;}});
