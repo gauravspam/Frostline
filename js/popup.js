@@ -174,5 +174,37 @@ function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
 }
 wireRefresh('pp-rdim', 'pp-rdim-note', 'shade-status', 'shade-reset');
 wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
+// Page-state diagnostics: show what the active tab actually paints, so a
+// worker/tab disagreement is visible here instead of via screenshots.
+function escHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function paintProbe() {
+  const out = document.querySelector('#pp-probe-out');
+  const btn = document.querySelector('#pp-probe');
+  if (btn) btn.classList.add('busy');
+  const done = () => { if (btn) btn.classList.remove('busy'); };
+  const fail = (m) => { done(); if (out) out.innerHTML = '<div class="pline bad">probe: ' + escHtml(m) + '</div>'; };
+  try {
+    chrome.runtime.sendMessage({ cmd: 'tab-probe' }, (r) => {
+      void chrome.runtime.lastError;
+      if (!r || !r.ok || !r.probe) { fail((r && r.err) || 'no worker'); return; }
+      done();
+      const p = r.probe;
+      const rows = [];
+      rows.push(['build', 'v' + (r.ver || '?'), '']);
+      rows.push(['tab', escHtml(String(r.tab || '').replace(/^https?:\/\//, '').slice(0, 36)), '']);
+      rows.push(['classes', escHtml(p.cls || '?'), '']);
+      const vf = p.vf || '?';
+      rows.push(['video ' + (p.v ? p.v.join('x') : '?'), vf, vf === 'none' ? 'good' : 'bad']);
+      rows.push(['overlay', escHtml((p.ov || []).join(' ') + ' ' + (p.ovblur || '')), '']);
+      const sh = p.sheets || [];
+      rows.push(['sheets S/T', String(sh.join('/')), sh.indexOf(-1) >= 0 ? 'bad' : 'good']);
+      rows.push(['button', p.btn ? 'present' : 'absent', p.btn ? 'good' : 'bad']);
+      if (out) out.innerHTML = rows.map(x => '<div class="pline ' + x[2] + '"><b>' + x[0] + '</b>' + x[1] + '</div>').join('');
+    });
+  } catch { fail('no worker'); }
+}
+const probeBtn = document.querySelector('#pp-probe');
+if (probeBtn) probeBtn.onclick = () => paintProbe();
+paintProbe();
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
 paintTheater();

@@ -89,6 +89,43 @@ const DIM_NEUTRAL = 'html.frostline-ov{--frostline-ov-bg:transparent!important;-
 // text of a single element makes every previous state unrepresentable.
 const DIM_SHEET = 'frostline-sheet-shade';
 const TH_SHEET = 'frostline-sheet-theater';
+// Page-state probe for the popup diagnostics section. Runs in the tab and
+// reports the computed video, overlay and sheet state, so a disagreement
+// between what the worker believes and what the page shows is visible here
+// instead of requiring screenshot forensics.
+function frostlineTabProbe(){
+  try{
+    var h=document.documentElement;
+    var v=document.querySelector('#movie_player video');
+    var g=function(e){try{return getComputedStyle(e);}catch(x){return null;}};
+    var r=function(e){try{var b=e.getBoundingClientRect();return [Math.round(b.x),Math.round(b.y),Math.round(b.width),Math.round(b.height)];}catch(x){return null;}};
+    var cs=getComputedStyle(h,'::before');
+    var cine=document.querySelector('#movie_player canvas');
+    var sheets=['frostline-sheet-shade','frostline-sheet-theater'].map(function(id){var e=document.getElementById(id);return e?e.textContent.length:-1;});
+    return JSON.stringify({cls:h.className||'(none)',
+      v:v?r(v):null,vf:v?g(v).filter:null,vfit:v?g(v).objectFit:null,
+      vvis:v?(g(v).visibility+'/'+g(v).display+'/'+g(v).opacity):null,
+      paused:v?v.paused:null,ready:v?v.readyState:-1,
+      ov:[cs.display,cs.zIndex,cs.backdropFilter],
+      ovblur:(g(h).getPropertyValue('--frostline-ov-blur')||'').trim(),
+      cine:cine?r(cine):null,sheets:sheets,btn:!!document.getElementById('frostline-th-wfs')});
+  }catch(e){return JSON.stringify({err:String((e&&e.message)||e).slice(0,80)});}
+}
+async function tabProbe(){
+  try{
+    let tabs=[];try{tabs=await chrome.tabs.query({active:true,currentWindow:true});}catch{}
+    if(!tabs||!tabs.length){try{tabs=await chrome.tabs.query({active:true});}catch{}}
+    const t=tabs&&tabs[0];
+    if(!t||!/^https?:\/\//i.test(t.url||''))return{ok:false,err:'no page tab'};
+    let r=null;
+    try{r=await chrome.scripting.executeScript({target:{tabId:t.id},func:frostlineTabProbe});}
+    catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,80)};}
+    const raw=r&&r[0]&&r[0].result;
+    let p=null;try{p=JSON.parse(raw||'{}');}catch(e){return{ok:false,err:'bad probe'};}
+    let ver='';try{ver=chrome.runtime.getManifest().version||'';}catch{}
+    return{ok:true,ver:ver,tab:String(t.url||'').slice(0,70),probe:p};
+  }catch(e){return{ok:false,err:'probe failed'};}
+}
 async function sheetWrite(tabId,id,css){
   try{
     await chrome.scripting.executeScript({target:{tabId:tabId},args:[id,css||''],func:(sid,text)=>{
@@ -560,7 +597,7 @@ chrome.runtime.onInstalled.addListener(details=>{try{chrome.alarms.create('frost
 chrome.runtime.onStartup.addListener(()=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
 async function workerCompletePomo(){try{const o=await chrome.storage.local.get('frostline_pomo');const p=o&&o.frostline_pomo;if(!p||!p.running||!p.endAt)return;const done={base:p.base||0,running:false,endAt:0,left:0};await chrome.storage.local.set({frostline_pomo:done});try{chrome.runtime.sendMessage({cmd:'pomo-beep'});}catch{}try{chrome.notifications.create({type:'basic',title:'Focus session complete',message:'Pomodorodinha timer finished - nice work!',iconUrl:chrome.runtime.getURL('assets/icon128.png'),silent:false});}catch{}}catch{}}
 chrome.alarms.onAlarm.addListener(a=>{if(!a)return;if(a.name==='frostline-discard'){autoDiscard();return;}if(a.name==='pomo-end'){workerCompletePomo();return;}});
-chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg&&msg.cmd==='pomo-start'){const _en=+msg.endAt||0;if(_en){try{chrome.alarms.create('pomo-end',{when:_en});}catch{}}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='pomo-stop'){try{chrome.alarms.clear('pomo-end');}catch{}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='discard-now'){autoDiscard().then(r=>{try{sendResponse(r||{discarded:0});}catch{}});return true;}if(msg&&msg.cmd==='dim-apply'){dimApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-status'){dimVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-reset'){dimResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-status'){theaterVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-reset'){theaterResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-apply'){theaterApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-btn'){try{(async()=>{try{const cur=await theaterCfg();const pt=(msg&&msg.patch)||{};const upd={};if(typeof pt.wfs!=='undefined')upd.wfs=pt.wfs?1:0;const next=Object.assign({},cur,upd);await chrome.storage.local.set({frostline_ytCfg:next});if(msg.vid&&cur.remember){try{const mem=await theaterMem();mem[msg.vid]={wfs:next.wfs?1:0};await theaterMemSave(mem);}catch{}}try{sendResponse({ok:true});}catch{}}catch{try{sendResponse({ok:false});}catch{}}})();}catch{try{sendResponse({ok:false});}catch{}}return true;}});
+chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg&&msg.cmd==='pomo-start'){const _en=+msg.endAt||0;if(_en){try{chrome.alarms.create('pomo-end',{when:_en});}catch{}}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='pomo-stop'){try{chrome.alarms.clear('pomo-end');}catch{}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='discard-now'){autoDiscard().then(r=>{try{sendResponse(r||{discarded:0});}catch{}});return true;}if(msg&&msg.cmd==='dim-apply'){dimApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-status'){dimVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-reset'){dimResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-status'){theaterVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-reset'){theaterResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-apply'){theaterApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='tab-probe'){tabProbe().then(r=>{try{sendResponse(r||{ok:false});}catch{}});return true;}if(msg&&msg.cmd==='theater-btn'){try{(async()=>{try{const cur=await theaterCfg();const pt=(msg&&msg.patch)||{};const upd={};if(typeof pt.wfs!=='undefined')upd.wfs=pt.wfs?1:0;const next=Object.assign({},cur,upd);await chrome.storage.local.set({frostline_ytCfg:next});if(msg.vid&&cur.remember){try{const mem=await theaterMem();mem[msg.vid]={wfs:next.wfs?1:0};await theaterMemSave(mem);}catch{}}try{sendResponse({ok:true});}catch{}}catch{try{sendResponse({ok:false});}catch{}}})();}catch{try{sendResponse({ok:false});}catch{}}return true;}});
 chrome.contextMenus.onClicked.addListener((info,tab)=>{const id=String((info&&info.menuItemId)||'');if(id==='frostline-disc-release'){releaseTabs(tab||null);return;}if(id.indexOf('frostline-disc-')===0)manualDiscard(id.slice('frostline-disc-'.length),tab||null);});
 chrome.commands.onCommand.addListener(async cmd=>{
   try{
