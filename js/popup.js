@@ -121,5 +121,38 @@ function paintTheater() {
   const t = document.querySelector('#pp-t-toggle');
   if (t) t.classList.toggle('on', !!th.enabled);
 }
+// The worker probes the resolved page state, because injected CSS outlives the
+// service worker: it can lose all record of a rule it is still responsible for.
+// That disagreement is what turns these buttons red.
+function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
+  const btn = document.querySelector('#' + btnId);
+  const note = document.querySelector('#' + noteId);
+  if (!btn) return;
+  const show = (st) => {
+    const bad = !!(st && st.mismatch);
+    btn.classList.toggle('pending', bad);
+    if (note) note.classList.toggle('show', bad);
+  };
+  btn.onclick = () => {
+    btn.classList.add('busy');
+    try {
+      chrome.runtime.sendMessage({ cmd: resetCmd }, () => {
+        void chrome.runtime.lastError;
+        btn.classList.remove('busy');
+        try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
+      });
+    } catch { btn.classList.remove('busy'); }
+  };
+  try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
+  try {
+    chrome.storage.onChanged.addListener((ch, area) => {
+      if (area !== 'local') return;
+      const key = statusCmd === 'shade-status' ? 'frostline_shadeState' : 'frostline_theaterState';
+      if (ch[key]) show(ch[key].newValue);
+    });
+  } catch {}
+}
+wireRefresh('pp-rdim', 'pp-rdim-note', 'shade-status', 'shade-reset');
+wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
 paintTheater();

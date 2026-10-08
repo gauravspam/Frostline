@@ -24,18 +24,29 @@
   .tswitch i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
   .tswitch.on{background:#4ade80}
   .tswitch.on i{left:20px}
+  .rgroup{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .rbtn{width:26px;height:26px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit;transition:.15s}
+  .rbtn:hover{background:rgba(255,255,255,.12);color:#fff}
+  .rbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .rbtn.pending{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.12);animation:rpulse 1s ease-in-out infinite}
+  .rbtn.busy{opacity:.5;pointer-events:none}
+  @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
+  .rnote{font-size:11px;color:#f87171;margin-top:6px;display:none}
+  .rnote.show{display:block}
 </style>
 </head>
 <body>
   <h1><span class="dot"></span>Shade</h1>
-  <div class="row"><span>Enable Shade</span><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></div>
+  <div class="row"><span>Enable Shade</span><span class="rgroup"><button class="rbtn" id="pp-rdim" title="Re-apply Shade to every tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></span></div>
+  <div class="rnote" id="pp-rdim-note">Shade state does not match this page. Reload the tab, or press refresh to re-apply.</div>
   <div class="row"><input type="range" id="pp-intensity" min="0" max="100" step="1" value="40" /><span class="val" id="pp-val">40%</span></div>
   <div class="seg" id="pp-mode"><button data-m="dimmer">Dim</button><button data-m="reader">Reader</button><button data-m="blur">Blur</button></div>
   <div class="seg" id="pp-scope"><button data-s="page">Page</button><button data-s="media">Media</button></div>
   <hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:14px 0 2px" />
   <h1><span class="dot" style="background:#ff0000"></span>Theater</h1>
-  <div class="row"><span>Enable Theater</span><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></div>
+  <div class="row"><span>Enable Theater</span><span class="rgroup"><button class="rbtn" id="pp-rt" title="Re-apply Theater to every YouTube tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></span></div>
+  <div class="rnote" id="pp-rt-note">Theater state does not match this page. Reload the tab, or press refresh to re-apply.</div>
 
-  <script src="js/popup.js?v=2"></script>
+  <script src="js/popup.js?v=3"></script>
 </body>
 </html>
