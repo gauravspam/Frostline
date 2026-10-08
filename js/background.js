@@ -436,7 +436,7 @@ function frostlineTheaterBoot(cfg){
       var host=document.getElementById('movie_player');
       if(!host){var pp=anchor.parentNode;while(pp&&pp.id!=='movie_player')pp=pp.parentNode;host=(pp&&pp.id==='movie_player')?pp:null;}
       if(!host){anchor.prepend(tip);return;}
-      try{host.style.setProperty('position','relative','important');}catch(_){}
+      try{if(host&&getComputedStyle(host).position==='static')host.style.setProperty('position','relative','important');}catch(_){}
       host.appendChild(tip);
       var ar=anchor.getBoundingClientRect(),hr=host.getBoundingClientRect();
       tip.style.left=(ar.left+ar.width/2-hr.left)+'px';tip.style.top=(ar.top-hr.top)+'px';

@@ -185,7 +185,7 @@
       let host = document.getElementById('movie_player');
       if (!host) { let p = anchor.parentNode; while (p && p.id !== 'movie_player') p = p.parentNode; host = (p && p.id === 'movie_player') ? p : null; }
       if (!host) { anchor.prepend(tip); return; }
-      try { host.style.setProperty('position', 'relative', 'important'); } catch {}
+      try { if (host && getComputedStyle(host).position === 'static') host.style.setProperty('position', 'relative', 'important'); } catch {}
       host.appendChild(tip);
       const ar = anchor.getBoundingClientRect();
       const hr = host.getBoundingClientRect();
