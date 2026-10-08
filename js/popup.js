@@ -6,18 +6,18 @@ const store = {
 let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 45, reader: 75, blur: 50 }, edit: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
 function dimEnsureShapeP(){
   dim.fx = dim.fx || {};
-  // The fresh-install seed writes vals:{0,0,0} and fx:{dimmer:1,reader:0,blur:0}.
-  // Object.assign cannot repair explicit zeros, so a seeded config keeps every
-  // value at 0 and dimCss renders nothing. Repair zeros here instead.
+  // Fill in MISSING values only; a stored 0 is a deliberate choice and is kept.
   const DEF = { dimmer: 45, reader: 75, blur: 50 };
   dim.vals = Object.assign({}, DEF, dim.vals || {});
   for (const k of ['dimmer', 'reader', 'blur']) {
-    if (typeof dim.vals[k] !== 'number' || !isFinite(dim.vals[k]) || dim.vals[k] <= 0) dim.vals[k] = DEF[k];
+    const v = dim.vals[k];
+    if (typeof v !== 'number' || !isFinite(v) || v < 0 || v > 100) dim.vals[k] = DEF[k];
   }
   if (!['dimmer', 'reader', 'blur'].includes(dim.edit)) dim.edit = 'dimmer';
-  // The active effect must be armed, or dimCss zeroes it out and paints nothing.
-  if (!dim.fx.dimmer && !dim.fx.reader && !dim.fx.blur) dim.fx.dimmer = 1;
-  dim.fx[dim.edit] = 1;
+  dim.mode = dim.edit;
+  if (dim.fx.dimmer === undefined) dim.fx.dimmer = 1;
+  if (dim.fx.reader === undefined) dim.fx.reader = 1;
+  if (dim.fx.blur === undefined) dim.fx.blur = 1;
   dim.scopes = Object.assign({ dimmer: 'page', reader: 'page', blur: 'page' }, dim.scopes || {});
 }
 (function(){try{if(!localStorage.getItem('frostline_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('frostline_fxMigrated','1');}}catch{}})();
@@ -43,29 +43,39 @@ function paint() {
 document.querySelector('#pp-toggle').onclick = () => { dim.enabled = dim.enabled ? 0 : 1; saveDim(); paint(); };
 document.querySelector('#pp-intensity').oninput = e => {
   dimEnsureShapeP();
-  const v = +e.target.value;
-  dim.vals[dim.edit] = v;
-  // Dragging the slider also implies "turn this effect on", and a non-zero value
-  // is what makes dimCss emit anything for it.
-  if (v > 0) dim.fx[dim.edit] = 1;
+  dim.vals[dim.edit] = +e.target.value;
+  dim.mode = dim.edit;
+  // 0 is a valid "off" value; anything above 0 arms the effect.
+  dim.fx[dim.edit] = (+e.target.value > 0) ? 1 : 0;
   saveDim();
   paint();
 };
-// Selecting a mode must also arm its fx flag. dimCss() gates every effect on
-// cfg.fx, so setting only dim.edit left fx.reader/fx.blur at 0 and the overlay
-// rendered nothing at all - the "Reader/Blur gives up" symptom.
+// Modes are exclusive, so selecting one must also make it the active mode and
+// carry over the currently shown scope. Otherwise dimCss keeps painting the
+// previous effect, which is why Reader showed a black screen and why the
+// scope buttons appeared to apply to the wrong mode.
 document.querySelectorAll('#pp-mode button').forEach(b => b.onclick = () => {
   const k = b.dataset.m;
   dimEnsureShapeP();
+  const cur = dim.scopes[dim.edit] || 'page';
   dim.edit = k;
+  dim.mode = k;
+  dim.scopes[k] = cur;
   dim.fx[k] = 1;
-  // A zero value for the newly selected effect renders nothing; give it a
-  // sensible default so the mode always does something visible.
-  if (typeof dim.vals[k] !== 'number' || dim.vals[k] <= 0) dim.vals[k] = k === 'blur' ? 50 : 75;
+  // Give a never-configured mode a visible starting value, but never override a
+  // value the user has deliberately set to 0.
+  if (typeof dim.vals[k] !== 'number' || !isFinite(dim.vals[k])) dim.vals[k] = k === 'blur' ? 50 : 75;
   saveDim();
   paint();
 });
-document.querySelectorAll('#pp-scope button').forEach(b => b.onclick = () => { dimEnsureShapeP(); const k = dim.edit || 'dimmer'; if (b.dataset.s === 'media' && k === 'reader') { b.classList.add('denied'); setTimeout(() => b.classList.remove('denied'), 650); return; } dim.scopes[k] = b.dataset.s; saveDim(); paint(); });
+// Scope applies to the active mode only. Media is now valid for every mode
+// including Reader - the old denial left Reader with no reachable media path.
+document.querySelectorAll('#pp-scope button').forEach(b => b.onclick = () => {
+  dimEnsureShapeP();
+  dim.scopes[dim.edit || 'dimmer'] = b.dataset.s;
+  saveDim();
+  paint();
+});
 
 try {
   chrome.storage.onChanged.addListener((ch, area) => {

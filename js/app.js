@@ -453,15 +453,16 @@ function fxEq(x,y){x=x||{};y=y||{};return!!x.dimmer===!!y.dimmer&&!!x.reader===!
 function dimValsMatch(pv){const v=(dim.vals||{});return Object.keys(pv).every(k=>v[k]===pv[k]);}
 function dimEnsureShape(){
   dim.fx=dim.fx||{};
-  // Repair explicit zeros: the fresh seed writes vals:{0,0,0}, which
-  // Object.assign will not overwrite, so the config stays at zero and dimCss
-  // emits no overlay and no filter at all.
+  // Fill in MISSING values only. A stored 0 is a deliberate user choice and must
+  // survive: force-repairing zeros silently undid "set Dim to 0%".
   const DEF={dimmer:45,reader:75,blur:50};
   dim.vals=Object.assign({},DEF,dim.vals||{});
-  ['dimmer','reader','blur'].forEach(k=>{if(typeof dim.vals[k]!=='number'||!isFinite(dim.vals[k])||dim.vals[k]<=0)dim.vals[k]=DEF[k];});
+  ['dimmer','reader','blur'].forEach(k=>{const v=dim.vals[k];if(typeof v!=='number'||!isFinite(v)||v<0||v>100)dim.vals[k]=DEF[k];});
   if(!['dimmer','reader','blur'].includes(dim.edit))dim.edit='dimmer';
-  if(!dim.fx.dimmer&&!dim.fx.reader&&!dim.fx.blur)dim.fx.dimmer=1;
-  dim.fx[dim.edit]=1;
+  dim.mode=dim.edit;
+  if(dim.fx.dimmer===undefined)dim.fx.dimmer=1;
+  if(dim.fx.reader===undefined)dim.fx.reader=1;
+  if(dim.fx.blur===undefined)dim.fx.blur=1;
   dim.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},dim.scopes||{});
 }
 function saveDisc(){store.set('discardCfg',disc);try{chrome.storage.local.set({frostline_discardCfg:disc});}catch{}}
