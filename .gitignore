@@ -1,0 +1,33 @@
+# Build output / tooling
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Editor / OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs and temp files
+*.log
+npm-debug.log*
+yarn-error.log*
+*.tmp
+*.bak
+*.swp
+
+# Local secrets — never commit API keys or tokens
+.env
+.env.local
+*.pem
+*.key
+secrets.json
+
+# Packaged extensions (regenerate, don't commit)
+*.crx
+*.pem
+*.zip

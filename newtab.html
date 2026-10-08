@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Aurora — New Tab</title>
+<title>Frostline — New Tab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,400;1,500&display=swap" rel="stylesheet">
@@ -22,6 +22,11 @@
     </div>
     <div id="ai-orbit"></div>
   </div>
+  <div id="search-wrap">
+    <form id="search-form" autocomplete="off">
+      <input id="search-input" placeholder="Search Bar" autocomplete="off" spellcheck="false" />
+    </form>
+  </div>
   <div id="top-right">
     <button class="circle-btn dark-glass" id="google-apps-btn" title="Google apps">G</button>
     <button class="circle-btn dark-glass hidden" id="fs-btn" title="Toggle Full Screen">⛶</button>
@@ -31,7 +36,7 @@
   </div>
   <div id="gapps-panel" class="hidden">
     <a href="https://mail.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg><span>Gmail</span></a>
-    <a href="https://drive.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2L4 14l8 8 8-8L12 2z"/></svg><span>Drive</span></a>
+    <a href="https://drive.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 3L1.5 20.5h21L12 3zm0 4.2l6.2 11.3H5.8L12 7.2z"/></svg><span>Drive</span></a>
     <a href="https://docs.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7H6V7h7v2zm0 4H6v-2h7v2zm0 4H6v-2h7v2z"/></svg><span>Docs</span></a>
     <a href="https://sheets.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM6 7h4v2H6V7zm0 4h4v2H6v-2zm0 4h4v2H6v-2z"/></svg><span>Sheets</span></a>
     <a href="https://slides.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 16H7V7h10v12zM9 9h2v2H9V9zm4 0h2v2h-2V9zm-4 4h2v2H9v-2zm4 0h2v2h-2v-2z"/></svg><span>Slides</span></a>
@@ -42,7 +47,9 @@
     <a href="https://news.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7v-2h10v2z"/></svg><span>News</span></a>
     <a href="https://translate.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 7.56 12.95 6 15.36 6 18h12c0-2.63-1.56-5.04-3.87-6.93zM18 13H6v-2h12v2z"/></svg><span>Translate</span></a>
     <a href="https://keep.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM11 7h2v2h-2V7zm-4 0h2v2H7V7zm8 8H7v-2h8v2zm0-4H7v-2h8v2z"/></svg><span>Keep</span></a>
-    <a href="https://meet.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg><span>Meet</span></a>
+    <a href="https://meet.google.com" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg><span>Meet</span></a>
+    <a href="https://myaccount.google.com/" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg><span>Account</span></a>
+    <a href="https://excalidraw.com/" target="_blank"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg><span>Excalidraw</span></a>
   </div>
 </header>
 
@@ -76,6 +83,13 @@
     <span class="w-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3z"/><path d="M15 3v6h6"/></svg></span>
     <span class="w-text"><small>Notes</small><strong id="w-notes">Click to view</strong></span>
   </button>
+</aside>
+
+<button id="news-notch" title="News" aria-label="News"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h13v14H6a2 2 0 0 1-2-2V5z"/><path d="M17 8h2a1 1 0 0 1 1 1v9a2 2 0 0 1-2 2H6"/><path d="M7 9h7M7 12h7M7 15h4"/></svg></button>
+<aside id="news-panel">
+  <header><h2>Top Headlines</h2><button id="news-refresh" class="icon-btn" title="Refresh">↻</button><button id="news-close" class="m-close">✕</button></header>
+  <ul id="news-list"></ul>
+  <div id="news-updated" class="muted small"></div>
 </aside>
 
 <!-- Center -->
@@ -120,8 +134,6 @@
   </nav>
 </footer>
 
-<div id="photo-credit" class="dark-glass">Photo by <b>Greg Shield</b> on <b>Unsplash</b></div>
-
 <!-- Overlay -->
 <div id="overlay" class="hidden"></div>
 
@@ -150,6 +162,7 @@
       <button id="t-reset" class="round-btn" title="Reset">↻</button>
       <button id="t-plus5" class="round-btn" title="Add 5 minutes">+5</button>
     </div>
+    <p class="muted small" style="text-align:center;margin:10px 0 0">Tip: hold ±5 for 0.5s to switch sign</p>
   </div>
 </section>
 
@@ -176,7 +189,7 @@
     <div id="weather-hero"><div><div id="weather-big">--</div><div id="weather-detail">Loading…</div></div><span id="wx-icon"></span></div>
     <div class="wx-seclabel">Today, hourly</div>
     <div id="weather-hourly"></div>
-    <div id="wx-botrow"><div class="wx-col"><div class="wx-seclabel" id="wx-arc-label">Sunrise &amp; sunset</div><div id="wx-sun"></div></div><div class="wx-col"><div class="wx-seclabel">Next 5 days</div><div id="wx-daily"></div></div></div>
+    <div id="wx-botrow"><div class="wx-col"><div class="wx-seclabel">Sunrise &amp; sunset</div><div id="wx-sun"></div></div><div class="wx-col"><div class="wx-seclabel">Next 5 days</div><div id="wx-daily"></div></div></div>
   </div>
 </section>
 
@@ -209,7 +222,7 @@
 
 <section id="shortcuts-modal" class="modal hidden">
   <header><span class="m-icon">▦</span><h2>All Shortcuts</h2><button class="m-close">✕</button></header>
-  <div class="m-body"><ul id="shortcuts-list"></ul><div class="task-add"><input id="shortcut-name" placeholder="Name" /><input id="shortcut-url" placeholder="https://…" /><button id="shortcut-add">＋</button></div><p class="muted small">Right-click dock items to edit/delete</p></div>
+  <div class="m-body"><ul id="shortcuts-list"></ul><div class="task-add"><input id="shortcut-name" placeholder="Name" /><input id="shortcut-url" placeholder="https://…" /><button id="shortcut-add">＋</button></div><p class="muted small">Drag tiles to reorder · right-click dock items to edit/delete</p></div>
 </section>
 
 <section id="settings-modal" class="modal settings-modal hidden">
@@ -222,12 +235,12 @@
     <button data-tab="github" title="Github" aria-label="Github"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></button>
     <button data-tab="prefs" title="Prefs" aria-label="Prefs"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/><circle cx="9" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="7" cy="18" r="2"/></svg></button>
     <button data-tab="discard" title="Discard" aria-label="Discard"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-    <button data-tab="dimmer" title="Dimmer" aria-label="Dimmer"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
-    <button data-tab="yt" title="YT Full" aria-label="YT Full"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M10 8.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8"/></svg></button>
+    <button data-tab="dimmer" title="Shade" aria-label="Shade"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    <button data-tab="yt" title="Theater" aria-label="Theater"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M10 8.5l5 2.5-5 2.5z" fill="currentColor" stroke="none"/><path d="M8 21h8"/></svg></button>
     <button data-tab="backup" title="Backup" aria-label="Backup"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg></button>
   </nav>
   <div class="set-scroll">
-    <div class="set-card buy-card">Enjoying Aurora? Support updates!<button class="buy-btn">☕&nbsp;&nbsp; Buy me a coffee</button></div>
+    <div class="set-card buy-card">Enjoying Frostline? Support updates!<button class="buy-btn">☕&nbsp;&nbsp; Buy me a coffee</button></div>
 
     <div class="set-pane" id="pane-background">
       <div class="set-card">
@@ -238,9 +251,9 @@
           <button data-bg="video">Video</button>
         </div>
         <div id="bg-pane-unsplash">
-          <label>Unsplash API Key (Optional)<input id="set-unsplash-key" placeholder="Leave empty for the free daily rotation" autocomplete="off" /></label>
-          <p class="muted small">No key needed — Aurora rotates free Unsplash photos by default. Add your own key from <a href="https://unsplash.com/developers" target="_blank">Unsplash Developers</a> for fresh random photos.</p>
-          <label>Refresh Interval<select id="set-refresh"><option value="day">Once a Day</option><option value="hour">Every Hour</option><option value="tab">Every New Tab</option><option value="week">Once a Week</option><option value="always">Always</option><option value="never">Never</option></select></label>
+          <label>Unsplash API Key (Optional)<input id="set-unsplash-key" type="password" placeholder="Leave empty for the free daily rotation" autocomplete="off" /></label>
+          <p class="muted small">No key needed — Frostline rotates free Unsplash photos by default. Add your own key from <a href="https://unsplash.com/developers" target="_blank">Unsplash Developers</a> for fresh random photos.</p>
+          <div class="fld-label">Refresh Interval</div><div class="csel"><button id="refresh-btn"></button></div><ul class="cdrop" id="refresh-drop"></ul>
           <button id="bg-refresh-now">↻ Refresh now</button>
           <p class="muted small" id="bg-status"></p>
           <div class="fld-label">Free rotation</div>
@@ -251,11 +264,15 @@
         </div>
         <div id="bg-pane-color" class="hidden">
           <label>Color / Gradient <input id="set-color" placeholder="#1a202c or linear-gradient(...)" /></label>
+          <div class="fld-label">Pick a color</div>
+          <div id="color-pickrow"><input type="color" id="set-color-pick" value="#1a202c" /><span class="muted small">Tap to open the color picker</span></div>
+          <div class="fld-label">Preset sets</div>
+          <div id="bg-swatches"></div>
         </div>
         <div id="bg-pane-video" class="hidden">
           <label>Video file <input type="file" id="set-video" accept="video/*" /></label>
         </div>
-        <label>Photo credit <input id="set-credit" placeholder="Photo by ... on Unsplash" /></label>
+
       </div>
     </div>
     <div class="set-pane active" id="pane-display">
@@ -263,12 +280,6 @@
         <div id="clock-pick"></div>
         <div id="clock-size-row"><span>Clock size</span><input type="range" id="set-clock-size" min="70" max="150" step="5" value="100"><b id="clock-size-val">100%</b></div>
         <div class="pills" id="tf-seg"><span class="pills-label">Time format</span><span class="pills-btns"><button data-tf="12h">12h</button><button data-tf="24h">24h</button></span></div>
-      </div>
-      <div class="set-card"><h4>Appearance</h4>
-        <div class="fld-label">Theme</div>
-        <div id="theme-pick"><button class="theme-tile" data-t="auto"><span class="theme-thumb"></span>System</button><button class="theme-tile" data-t="dark"><span class="theme-thumb"></span>Dark</button><button class="theme-tile" data-t="light"><span class="theme-thumb"></span>Light</button></div>
-        <div class="fld-label">Accent color</div>
-        <div id="accent-row"></div>
       </div>
       <div class="set-card"><div id="display-toggles"></div>
         <label>Custom greeting <input id="set-custom-greet" placeholder="e.g. Enjoy your day" /></label>
@@ -280,21 +291,30 @@
         <div class="seg" id="wx-mode-seg"><button data-m="auto">Auto</button><button data-m="city">Manual</button></div>
         <div id="wx-city-row"><label>City <input id="set-wx-city" placeholder="e.g. London" /></label></div>
         <label>City (lat,lon) <input id="set-loc" placeholder="28.6,77.2" /></label>
-        <label>Units <select id="set-units"><option value="c">°C</option><option value="f">°F</option></select></label>
+        <div class="fld-label">Units</div><div class="csel"><button id="units-btn"></button></div><ul class="cdrop" id="units-drop"></ul>
       </div>
     </div>
     <div class="set-pane" id="pane-widgets">
       <div class="set-card"><h4>Dashboard Widgets</h4><div id="widget-toggles"></div>
-        <div id="ui-toggles-2"></div>
         <p class="muted small">Click widgets on the left to expand them into full view</p>
+      </div>
+      <div class="set-card"><h4>Screen Elements</h4>
+        <div id="ui-toggles-2"></div>
+      </div>
+      <div class="set-card"><h4>Quick Access Dock</h4><div id="dock-toggles"></div><p class="muted small">Right-click dock items to edit/delete</p>
+      </div>
+      <div class="set-card" id="news-opts-card"><h4>News Options</h4>
+        <div class="fld-label">News Country</div><div class="holpick" id="ncpick"><button id="nc-btn" class="hol-btn" aria-haspopup="listbox" aria-expanded="false"><span></span><small>▾</small></button><ul class="hol-list" id="nc-list" role="listbox"></ul></div>
+        <div class="fld-label">Category</div><div class="holpick" id="ntpick"><button id="nt-btn" class="hol-btn" aria-haspopup="listbox" aria-expanded="false"><span></span><small>▾</small></button><ul class="hol-list" id="nt-list" role="listbox"></ul></div>
       </div>
     </div>
     <div class="set-pane" id="pane-github">
       <div class="set-card"><h4>GitHub Username (Public)</h4>
-        <input id="gh-input" placeholder="gauravspam" />
+        <input id="gh-input" placeholder="Enter your GitHub username" />
         <p class="muted small">Required for fetching public contributions.</p>
         <h4>Personal Access Token</h4>
         <input id="gh-token" type="password" placeholder="••••••••••••••••••••••••" />
+        <div id="gh-token-note" class="hidden"></div>
         <p class="muted small">Required for private repos, notifications, and higher rate limits.<br/><a href="https://github.com/settings/tokens" target="_blank">Generate a classic token</a> (Scopes: repo, notifications, user)</p>
         <div class="sec-note"><b>Security Note:</b> This token is stored <i>only</i> in your browser's local storage and is never sent to any server other than GitHub API.</div>
         <div id="gh-toggles"></div>
@@ -302,15 +322,11 @@
       </div>
     </div>
     <div class="set-pane" id="pane-prefs">
-      <div class="set-card"><h4>Quick Access Dock</h4><div id="dock-toggles"></div><p class="muted small">Right-click dock items to edit/delete</p>
-      </div>
       <div class="set-card">
         <h4>UI Options</h4><div id="ui-toggles"></div>
       </div>
       <div class="set-card">
-        <h4>Quote Category</h4><select id="set-quote-cat"><option>Bhagavad Gita</option><option>Motivation</option><option>Stoicism</option><option>Buddhism</option><option>General</option></select>
-        <p class="muted small">Applies when Daily Inspiration widget is enabled</p>
-        <h4>Holiday Country</h4><input id="set-holiday" value="India" />
+        <h4>Holiday Country</h4><div class="holpick" id="holpick"><button id="hol-btn" class="hol-btn" aria-haspopup="listbox" aria-expanded="false"><span></span><small>▾</small></button><ul class="hol-list" id="hol-list" role="listbox"></ul></div>
         <p class="muted small">Override auto-detection for calendar holidays</p>
       </div>
       <div class="set-card"><h4>AI Agents</h4><ul id="agents-list"></ul>
@@ -322,6 +338,8 @@
     <div class="set-pane" id="pane-discard">
       <div class="set-card"><h4>Tab Discard</h4><div id="disc-toggles"></div>
         <div class="seg" id="disc-presets"><button data-p="gentle">Gentle</button><button data-p="balanced">Balanced</button><button data-p="aggressive">Aggressive</button></div>
+        <div id="disc-statusrow"><button id="disc-run" class="mini-btn">Discard now</button><span id="disc-status" class="muted small"></span></div>
+        <p class="muted small mod-note">Presets fill the sliders below — the lit one matches your current values. Chrome's own Hibernate in the tab right-click menu is separate and always available.</p>
       </div>
       <div class="set-card">
         <div id="disc-sliders"></div>
@@ -329,39 +347,23 @@
       </div>
       <div class="set-card">
         <label>Whitelist <span class="muted small">Comma-separated hostnames to never discard</span><textarea id="disc-wl" placeholder="e.g. meet.google.com, docs.google.com"></textarea></label>
-        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
+        <p class="muted small mod-note">Engine runs when Enable Discard is on — checks every minute. Manual actions live in the tab-strip and page right-click menus.</p>
       </div>
     </div>
     <div class="set-pane" id="pane-dimmer">
-      <div class="set-card"><h4>Dimmer</h4><div id="dim-toggles"></div>
-        <div class="seg" id="dim-presets"><button data-p="night">Night</button><button data-p="reading">Reading</button><button data-p="movie">Movie</button></div>
-        <div class="seg" id="dim-mode"><button data-m="overlay">Page Overlay</button><button data-m="media-only">Media Only</button></div>
-        <div id="dim-colors"></div>
-        <div id="dim-sliders"></div>
-        <div id="dim-toggles2"></div>
-      </div>
-      <div class="set-card">
-        <div id="dim-sched"></div>
-      </div>
-      <div class="set-card">
-        <h4>Per-site overrides</h4><ul id="dim-sites"></ul>
-        <div class="task-add"><input id="dim-site-input" placeholder="e.g. reddit.com" /><button id="dim-site-add">＋</button></div>
-        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
-      </div>
+      <div class="set-card"><h4>Shade</h4><div id="dim-toggles"></div></div>
     </div>
     <div class="set-pane" id="pane-yt">
-      <div class="set-card"><h4>YouTube Fullscreen</h4><div id="yt-toggles"></div>
-        <p class="muted small mod-note">Browser module — not active in Aurora yet. Values are saved for when it is.</p>
+      <div class="set-card"><h4>Theater</h4><div id="yt-toggles"></div>
+        <p class="muted small mod-note">Applies to YouTube watch pages. Windowed fills the browser window and removes the masthead, sidebar, and comments.</p>
       </div>
     </div>
     <div class="set-pane" id="pane-backup">
-      <div class="set-card"><h4>Backup &amp; Restore</h4><p class="muted small">Export your settings to a JSON file to back them up or share between devices. Note: custom backgrounds and video are not included.</p>
+      <div class="set-card"><h4>Backup &amp; Restore</h4><p class="muted small">Export all settings — including the API keys/tokens you entered — to a JSON file. Note: custom backgrounds and video are not included. Keep this file private; it contains your credentials.</p>
         <div class="exp-row"><button id="btn-export">⤓ Export</button><button id="btn-import">⤒ Import</button><input type="file" id="file-import" accept="application/json" class="hidden"/></div>
-        <p class="muted small" id="backup-status"></p>
+        <div class="exp-row"><button id="btn-reset">⟲ Reset to Frostline defaults</button></div>
       </div>
-    </div>
-    <p class="muted small" style="text-align:center;opacity:.5">Aurora v1.0.3</p>
-      </div>
+      <div id="backup-status" role="status" aria-live="polite"></div>
     </div>
   </div>
 </section>
@@ -378,6 +380,41 @@
 <ul id="wx-drop"></ul>
 <ul id="gh-repo-drop" class="cdrop"></ul>
 <ul id="gh-branch-drop" class="cdrop"></ul>
-<script src="js/app.js"></script>
+<!-- Onboarding: fresh-install instruction card -->
+<div id="onb-guide" class="onb-scrim hidden">
+  <div class="onb-card">
+    <h3>Welcome to Frostline ✦</h3>
+    <p class="muted">One quick Chrome setting first, so Frostline fills the whole page:</p>
+    <ol class="onb-steps">
+      <li>Click <b>Customize Chrome</b> at the bottom-right of this page</li>
+      <li>Turn off <b>Show footer on New Tab page</b></li>
+      <li>Click <b>✕</b> to close the panel</li>
+    </ol>
+    <button id="onb-done" class="onb-primary">I&rsquo;m done → Continue</button>
+  </div>
+</div>
+
+<!-- Onboarding: setup wizard -->
+<div id="onb-wiz" class="onb-scrim hidden">
+  <div class="onb-card">
+    <h3>Set up Frostline</h3>
+    <p class="muted small">Takes ~20 seconds. Everything can be changed later in Settings.</p>
+    <label class="onb-field"><span>Your city</span><input id="onb-city" placeholder="e.g. London" autocomplete="off" /><small id="onb-city-err" class="onb-err hidden"></small></label>
+    <div class="onb-row"><span>Show local news</span><div class="onb-seg" id="onb-news-seg"><button data-v="1" class="on">Yes</button><button data-v="0">No</button></div></div>
+    <div id="onb-news-extra">
+      <label class="onb-field"><span>News country</span><select id="onb-news-country"></select></label>
+      <label class="onb-field"><span>News category</span><select id="onb-news-cat"></select></label>
+    </div>
+    <div class="onb-row"><span>GitHub activity widget</span><div class="onb-seg" id="onb-gh-seg"><button data-v="1">Yes</button><button data-v="0" class="on">No</button></div></div>
+    <div id="onb-gh-extra" class="hidden">
+      <label class="onb-field"><span>GitHub username</span><input id="onb-gh-user" placeholder="e.g. octocat" autocomplete="off" /><small id="onb-gh-err" class="onb-err hidden"></small></label>
+    </div>
+    <label class="onb-field"><span>Holiday country</span><select id="onb-holiday"></select></label>
+    <p class="onb-tip">Tip: on YouTube press <kbd>`</kbd> to toggle Theater · <kbd>Esc</kbd> to exit.</p>
+    <div class="onb-actions"><button id="onb-skip" class="onb-ghost">Skip all</button><button id="onb-next" class="onb-primary">Continue</button></div>
+  </div>
+</div>
+
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

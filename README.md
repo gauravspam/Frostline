@@ -1,9 +1,9 @@
-# Aurora — Beautiful New Tab
+# Frostline — Beautiful New Tab
 
 1:1 Frost-style recreation (clean-room, for study). Load as unpacked MV3 extension.
 
 ## Run
-1. `chrome://extensions` → Developer mode → Load unpacked → select this folder (`Aurora`).
+1. `chrome://extensions` → Developer mode → Load unpacked → select this folder (`Frostline`).
 2. Open a new tab.
 
 ## What it copies (per screenshots + Suite engines)

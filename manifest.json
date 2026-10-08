@@ -1,14 +1,43 @@
 {
   "manifest_version": 3,
-  "name": "Aurora — Beautiful New Tab",
-  "version": "1.0.3",
-  "description": "Aurora: a beautiful new tab with floating-glass widgets, focus tools and daily inspiration. 1:1 Frost-style recreation.",
-  "permissions": ["storage", "geolocation", "system.cpu", "system.memory"],
-  "host_permissions": ["https://api.github.com/*", "https://api.open-meteo.com/*", "https://images.unsplash.com/*", "https://api.unsplash.com/*"],
+  "name": "Frostline — Beautiful New Tab",
+  "version": "1.4.35",
+  "description": "Frostline: a beautiful new tab with floating-glass widgets, focus tools and daily inspiration. 1:1 Frost-style recreation.",
+  "permissions": ["storage", "geolocation", "system.cpu", "system.memory", "tabs", "alarms", "contextMenus", "scripting", "notifications"],
+  "host_permissions": ["https://api.github.com/*", "https://api.open-meteo.com/*", "https://images.unsplash.com/*", "https://api.unsplash.com/*", "https://news.google.com/*", "*://*/*"],
   "chrome_url_overrides": {
     "newtab": "newtab.html"
   },
   "background": {
     "service_worker": "js/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://youtube.com/*", "*://*.youtube.com/*", "*://youtu.be/*"],
+      "js": ["js/theater.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Frostline",
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "toggle-dimmer": {
+      "suggested_key": { "default": "Alt+Shift+D" },
+      "description": "Toggle Shade on/off"
+    },
+    "dimmer-up": {
+      "suggested_key": { "default": "Alt+Shift+Up" },
+      "description": "Increase Shade intensity"
+    },
+    "dimmer-down": {
+      "suggested_key": { "default": "Alt+Shift+Down" },
+      "description": "Decrease Shade intensity"
+    },
+    "toggle-theater": {
+      "suggested_key": { "default": "Alt+Shift+T" },
+      "description": "Toggle Theater on/off"
+    }
   }
 }

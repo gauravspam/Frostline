@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{width:280px;padding:16px;font-family:system-ui,'Segoe UI',Roboto,sans-serif;background:rgba(16,19,22,.96);color:#fff}
+  h1{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  h1 .dot{width:8px;height:8px;border-radius:50%;background:#fbbf24}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:13px;color:#ddd}
+  .seg{display:flex;gap:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:4px;margin-top:12px}
+  .seg button{flex:1;border:none;background:transparent;color:#bbb;border-radius:9px;padding:8px 4px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
+  .seg button.on{background:rgba(255,255,255,.14);color:#fff}
+  .seg button.edit{box-shadow:0 0 0 2px #3b82f6}
+  .seg button.denied{background:rgba(239,68,68,.4)!important;color:#fff;transition:background .2s}
+  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0;min-width:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(255,255,255,.18)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;margin-top:-5px;box-shadow:0 1px 6px rgba(0,0,0,.5);cursor:pointer}
+  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.18)}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:#fff;cursor:pointer}
+  .val{min-width:44px;text-align:right;font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
+  .hint{font-size:11px;color:rgba(255,255,255,.4);margin-top:10px}
+  .tswitch{position:relative;width:40px;height:22px;border-radius:999px;background:rgba(255,255,255,.15);border:none;cursor:pointer;flex-shrink:0}
+  .tswitch i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
+  .tswitch.on{background:#4ade80}
+  .tswitch.on i{left:20px}
+</style>
+</head>
+<body>
+  <h1><span class="dot"></span>Shade</h1>
+  <div class="row"><span>Enable Shade</span><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></div>
+  <div class="row"><input type="range" id="pp-intensity" min="0" max="100" step="1" value="40" /><span class="val" id="pp-val">40%</span></div>
+  <div class="seg" id="pp-mode"><button data-m="dimmer">Dim</button><button data-m="reader">Reader</button><button data-m="blur">Blur</button></div>
+  <div class="seg" id="pp-scope"><button data-s="page">Page</button><button data-s="media">Media</button></div>
+  <hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:14px 0 2px" />
+  <h1><span class="dot" style="background:#ff0000"></span>Theater</h1>
+  <div class="row"><span>Enable Theater</span><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></div>
+
+  <script src="js/popup.js?v=2"></script>
+</body>
+</html>
