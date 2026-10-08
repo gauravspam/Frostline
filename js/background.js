@@ -76,23 +76,31 @@ async function manualDiscard(mode,src){
   return n;
 }
 async function dimCfg(){try{const o=await chrome.storage.local.get('frostline_dimmerCfg');return Object.assign({enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:0,reader:0,blur:0},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}},o.frostline_dimmerCfg||{});}catch{return{enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:0,reader:0,blur:0},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};}}
-// Every dimCss result must be a complete, self-cancelling rule set. insertCSS
-// accumulates, so a rule set that omits the overlay it previously installed can
-// never remove it - that is how a blur kept painting after Shade was switched
-// off. Both branches below therefore always emit the neutralising rules for the
-// page overlay (::before), the legacy overlay (::after) and the media filters.
+// Every dimCss result must be a complete, self-cancelling rule set, because the
+// rule set is written wholesale rather than layered: both branches below always
+// emit the neutralising rules for the page overlay (::before), the legacy overlay
+// (::after) and the media filters.
 const DIM_NEUTRAL = 'html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}img,video,canvas,picture,[style*="background-image"]{filter:none!important}';
-// A tab can hold more than one live ruleset: the neutral guard plus whichever
-// effect was last painted. Tracking only the newest string meant removeCSS could
-// never target an older one, so any rule orphaned by a worker restart stayed live
-// and had to be beaten by insertion order alone.
-const dimCssCache=new Map();
-function dimTrack(tabId){let s=dimCssCache.get(tabId);if(!s){s=new Set();dimCssCache.set(tabId,s);}return s;}
-async function dimRemoveAll(tabId){
-  const s=dimCssCache.get(tabId);
-  if(!s||!s.size)return;
-  for(const css of Array.from(s)){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:css});}catch{}}
-  s.clear();
+// Shade and Theater each own one stylesheet element and rewrite its text in full.
+// insertCSS plus a worker side record of what was inserted could not be trusted:
+// the service worker is evicted while the tab keeps its rules, so the record came
+// back empty and removeCSS never ran. The stale rules then lived in the tab until
+// the next navigation and had to be beaten by cascade order alone. Writing the
+// text of a single element makes every previous state unrepresentable.
+const DIM_SHEET = 'frostline-sheet-shade';
+const TH_SHEET = 'frostline-sheet-theater';
+async function sheetWrite(tabId,id,css){
+  try{
+    await chrome.scripting.executeScript({target:{tabId:tabId},args:[id,css||''],func:(sid,text)=>{
+      try{
+        var el=document.getElementById(sid);
+        if(!text){if(el)el.remove();return;}
+        if(!el){el=document.createElement('style');el.id=sid;(document.head||document.documentElement).appendChild(el);}
+        if(el.textContent!==text)el.textContent=text;
+      }catch(e){}
+    }});
+    return true;
+  }catch(e){return false;}
 }
 // Shade modes are MUTUALLY EXCLUSIVE: the UI shows one mode (dim/reader/blur),
 // one value and one scope. Only the active mode may paint. Treating all three
@@ -151,6 +159,10 @@ function dimCss(cfg,boost){
     // the video instead of dimming it.
     css+='html.frostline-ov::before{content:""!important;position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;z-index:1!important;pointer-events:none!important;background:var(--frostline-ov-bg)!important;backdrop-filter:blur(var(--frostline-ov-blur))!important;-webkit-backdrop-filter:blur(var(--frostline-ov-blur))!important;margin:0!important;padding:0!important;border:0!important;transition:opacity 150ms ease,backdrop-filter 150ms ease!important}';
     css+='html.frostline-th-wfs.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}';
+    // Hiding it outright beats any rule set an earlier build left behind. Those
+    // pinned the overlay at the top of the stacking order with a backdrop-filter,
+    // so they blurred the whole windowed player until the tab was reloaded.
+    css+='html.frostline-th-wfs.frostline-ov::before{display:none!important}';
   }
   css+='@media print{html.frostline-ov::before,html.frostline-ov::after{display:none!important}}';
   return{css};
@@ -162,11 +174,9 @@ async function dimApply(tabId,cfg){
       // they are all scoped to that class, and clearing the variables means a rule
       // that survives for any reason has nothing left to paint.
       try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{var o=document.getElementById('frostline-dimmer-ov');if(o)o.remove();var h=document.documentElement;h.classList.remove('frostline-darkdm','frostline-monly','frostline-ov');h.style.removeProperty('--frostline-ov-bg');h.style.removeProperty('--frostline-ov-blur');}catch(e){}}});}catch{}
-      await dimRemoveAll(tabId);
-      // Use the same self-cancelling rule set as the no-op path. Hiding only
-      // ::after here left the ::before page overlay alive, so a blur installed
-      // while Shade was on kept painting after Shade was switched off.
-      try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:DIM_NEUTRAL});dimTrack(tabId).add(DIM_NEUTRAL);}catch{}
+      // Keep the self-cancelling rule set rather than emptying the element, so a
+      // stale media-scope filter left by an earlier build still loses the cascade.
+      await sheetWrite(tabId,DIM_SHEET,DIM_NEUTRAL);
       // Re-add the class so DIM_NEUTRAL rules match. Without the class, the
       // neutral rules don't apply and stale media-scope filters can leak through.
       try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
@@ -178,19 +188,9 @@ async function dimApply(tabId,cfg){
       var h=document.documentElement;
       h.classList.toggle('frostline-darkdm',!!dark);
       h.classList.add('frostline-ov');
-      // Force style recalc to ensure class is visible to subsequently injected CSS
-      h.offsetHeight;
     }catch(e){}},args:[cfg.mode,!!cfg.dark]});
     const built=dimCss(cfg,boost);
-    // Always replace rather than trusting the cache. insertCSS is bound to the
-    // document, and YouTube's SPA navigation plus every full reload discards it
-    // while our Map still holds the old string - so the guard would skip the
-    // re-insert and Shade silently stopped applying until the worker restarted.
-    await dimRemoveAll(tabId);
-    try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});dimTrack(tabId).add(built.css);}
-    catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
-    // Verify the class stuck; if not, retry once (fixes Page scope on cold load)
-    try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
+    if(!await sheetWrite(tabId,DIM_SHEET,built.css))return{ok:false,err:'shade sheet not written'};
     return{ok:true};
   }catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
 }
@@ -286,8 +286,7 @@ async function dimResetAll(){
         h.style.removeProperty('--frostline-ov-bg');h.style.removeProperty('--frostline-ov-blur');
         var o=document.getElementById('frostline-dimmer-ov');if(o)o.remove();
       }catch(e){}}});
-      await dimRemoveAll(t.id);
-      try{await chrome.scripting.insertCSS({target:{tabId:t.id},css:DIM_NEUTRAL});dimTrack(t.id).add(DIM_NEUTRAL);}catch{}
+      await sheetWrite(t.id,DIM_SHEET,DIM_NEUTRAL);
       // Re-add class so DIM_NEUTRAL matches
       try{await chrome.scripting.executeScript({target:{tabId:t.id},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
       n++;
@@ -350,7 +349,6 @@ function theaterCss(cfg){
   css+=FROSTLINE_TIP_CSS;
   return{css};
 }
-const theaterCssCache=new Map();
 function frostlineTheaterBoot(cfg){
   try{
     var wfs=!!cfg.wfs;
@@ -464,8 +462,7 @@ function frostlineTheaterOff(){
 async function theaterApply(tabId,cfg,url){
   try{
     if(!theaterIsYT(url||'')){
-      const old=theaterCssCache.get(tabId);
-      if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}theaterCssCache.delete(tabId);}
+      await sheetWrite(tabId,TH_SHEET,'');
       return{ok:true,skipped:true};
     }
     const memWfs=await theaterEffWfs(cfg,url);
@@ -473,14 +470,11 @@ async function theaterApply(tabId,cfg,url){
     let eff=Object.assign({},cfg,{wfs:memWfs.wfs?1:0});
     if(!eff.enabled){
       try{await chrome.scripting.executeScript({target:{tabId:tabId},func:frostlineTheaterOff});}catch{}
-      const old2=theaterCssCache.get(tabId);
-      if(old2){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old2});}catch{}theaterCssCache.delete(tabId);}
+      await sheetWrite(tabId,TH_SHEET,'');
       return{ok:true};
     }
     const built=theaterCss(eff);
-    const old3=theaterCssCache.get(tabId);
-    if(old3&&old3!==built.css){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old3});}catch{}}
-    if(!old3||old3!==built.css){try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});}catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}theaterCssCache.set(tabId,built.css);}
+    if(!await sheetWrite(tabId,TH_SHEET,built.css))return{ok:false,err:'theater sheet not written'};
     try{await chrome.scripting.executeScript({target:{tabId:tabId},func:frostlineTheaterBoot,args:[{wfs:!!eff.wfs}]});}catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
     if(cfg.remember&&vid){
       try{const mem2=await theaterMem();mem2[vid]={wfs:eff.wfs?1:0};await theaterMemSave(mem2);}catch{}
@@ -542,8 +536,7 @@ async function theaterResetAll(){
     if(t.discarded)continue;
     try{
       await chrome.scripting.executeScript({target:{tabId:t.id},func:frostlineTheaterOff});
-      const old=theaterCssCache.get(t.id);
-      if(old){try{await chrome.scripting.removeCSS({target:{tabId:t.id},css:old});}catch{}theaterCssCache.delete(t.id);}
+      await sheetWrite(t.id,TH_SHEET,'');
       n++;
     }catch{}
   }
