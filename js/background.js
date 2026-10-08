@@ -175,8 +175,11 @@ async function dimApply(tabId,cfg){
     let boost=0;
     if(cfg.white){try{const r=await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{var bg=getComputedStyle(document.body).backgroundColor||'';var m=bg.match(/[\d.]+/g);return(m&&m.length>=3)?((.299*m[0]+.587*m[1]+.114*m[2])/255):0;}catch(e){return 0;}}});const L=r&&r[0]&&r[0].result;if(typeof L==='number'&&L>.82)boost=.15;}catch{}}
     await chrome.scripting.executeScript({target:{tabId:tabId},func:(mode,dark)=>{try{var ov=document.getElementById('frostline-dimmer-ov');if(ov)ov.remove();}catch(e){}try{
-      document.documentElement.classList.toggle('frostline-darkdm',!!dark);
-      document.documentElement.classList.add('frostline-ov');
+      var h=document.documentElement;
+      h.classList.toggle('frostline-darkdm',!!dark);
+      h.classList.add('frostline-ov');
+      // Force style recalc to ensure class is visible to subsequently injected CSS
+      h.offsetHeight;
     }catch(e){}},args:[cfg.mode,!!cfg.dark]});
     const built=dimCss(cfg,boost);
     // Always replace rather than trusting the cache. insertCSS is bound to the
@@ -186,6 +189,8 @@ async function dimApply(tabId,cfg){
     await dimRemoveAll(tabId);
     try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});dimTrack(tabId).add(built.css);}
     catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
+    // Verify the class stuck; if not, retry once (fixes Page scope on cold load)
+    try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
     return{ok:true};
   }catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
 }
@@ -338,8 +343,10 @@ function theaterCss(cfg){
   // YouTube sizes the inner video layer from the player's own aspect-ratio box,
   // so pinning the player alone leaves the frame letterboxed and offset inside
   // the viewport. Let the video layer fill the box and keep the frame intact.
-  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;transform:none!important;object-fit:contain!important}';
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;transform:none!important;object-fit:contain!important;filter:none!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #content{padding-top:0!important}';
+  // Disable Shade media-scope filters on YouTube when Theater is active.
+  if(cfg.wfs)css+='html.frostline-th-wfs img,html.frostline-th-wfs video,html.frostline-th-wfs canvas,html.frostline-th-wfs picture,html.frostline-th-wfs [style*="background-image"]{filter:none!important}';
   css+=FROSTLINE_TIP_CSS;
   return{css};
 }
