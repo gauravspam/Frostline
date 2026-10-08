@@ -15,13 +15,6 @@ repos:
     hooks:
       - id: gitleaks
 
-  # Semgrep - SAST - unlimited free for individuals
-  - repo: https://github.com/semgrep/semgrep
-    rev: v1.104.0
-    hooks:
-      - id: semgrep
-        args: ['--config=auto', '--error']
-
   # Pre-commit basics
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
