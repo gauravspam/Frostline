@@ -7,17 +7,18 @@ on:
   schedule:
     - cron: '0 6 * * 1'  # Weekly Monday 6 AM
 
-permissions:
-  contents: read
-  security-events: write
-  actions: read
+permissions: {}
 
 jobs:
   workflow-lint:
     name: Lint workflows (actionlint + zizmor)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: actionlint (workflow syntax + best practices)
         uses: raven-actions/actionlint@3d39aea434753780c3b3d4a1a31c854b4dbf49d7 # v2.2.0
       - name: zizmor (Actions security audit)
@@ -28,10 +29,15 @@ jobs:
   semgrep:
     name: Semgrep (SAST, 30+ languages)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     container:
-      image: semgrep/semgrep
+      image: semgrep/semgrep:1.180.0@sha256:529ee8a277ec8adc5b534d7c74eea0a47e9de21d62852b6ba7ac6ba9566845c3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Run Semgrep
         run: semgrep scan --config auto --error --sarif --output semgrep-results.sarif
       - name: Upload Semgrep results to Security tab
@@ -43,9 +49,14 @@ jobs:
   trivy:
     name: Trivy (secrets + misconfig)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       # Actions pinned to commit SHA (tags can be force-pushed, trivy-action tags were compromised Mar 2026)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Run Trivy filesystem scan
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -72,10 +83,13 @@ jobs:
   gitleaks:
     name: Gitleaks (secrets)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
         env:
