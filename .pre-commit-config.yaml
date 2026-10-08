@@ -1,0 +1,45 @@
+repos:
+  # Trivy - deps + secrets + IaC + misconfig - unlimited free
+  - repo: local
+    hooks:
+      - id: trivy
+        name: Trivy security scan
+        entry: trivy fs --severity CRITICAL,HIGH --exit-code 1 --quiet .
+        language: system
+        pass_filenames: false
+        types: [file]
+
+  # Gitleaks - secrets detection - unlimited free
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+
+  # Semgrep - SAST - unlimited free for individuals
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.104.0
+    hooks:
+      - id: semgrep
+        args: ['--config=auto', '--error']
+
+  # Pre-commit basics
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: detect-aws-credentials
+
+  # AI-tell blockers (from earlier)
+  - repo: local
+    hooks:
+      - id: no-ai-tells
+        name: Block em dashes and narration comments
+        entry: sh scripts/check-ai-tells.sh
+        language: system
+        pass_filenames: false
+        stages: [commit]
