@@ -116,8 +116,8 @@ try {
 } catch {}
 paint();
 // ---- Theater: windowed fullscreen ----
-let th = Object.assign({ enabled: 0, wfs: 1, remember: 1, shortcut: 1 }, store.get('ytCfg', {}));
-function thEnsureShape(){ if (typeof th.wfs !== 'number') th.wfs = th.wfs ? 1 : 1; if (typeof th.remember !== 'number') th.remember = th.remember ? 1 : 1; if (typeof th.shortcut !== 'number') th.shortcut = th.shortcut ? 1 : 1; }
+let th = Object.assign({ enabled: 0, wfs: 0, remember: 1, shortcut: 1 }, store.get('ytCfg', {}));
+function thEnsureShape(){ if (typeof th.wfs !== 'number') th.wfs = th.wfs ? 1 : 0; if (typeof th.remember !== 'number') th.remember = th.remember ? 1 : 1; if (typeof th.shortcut !== 'number') th.shortcut = th.shortcut ? 1 : 1; }
 thEnsureShape();
 let pushTh = null;
 function saveTh() {

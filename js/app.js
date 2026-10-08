@@ -11,7 +11,7 @@ S('orbitGeom',{r:135,size:45,gap:55});S('geomV',3);
 S('gh','');S('newsCountry','US');S('newsCat','general');S('holiday','General');
 const DISC1={enabled:1,idle:15,grace:60,minTabs:3,neverActive:1,neverAudible:1,neverPinned:1,neverForm:1,whitelist:'',memPressure:0,memThreshold:20};
 const DIM1={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:1,reader:0,blur:0},edit:'dimmer',mode:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};
-const YT1={enabled:1,wfs:1,remember:1,shortcut:1};
+const YT1={enabled:1,wfs:0,remember:1,shortcut:1};
 S('discardCfg',DISC1);S('dimmerCfg',DIM1);S('ytCfg',YT1);
 S('onb',0);
 try{if(chrome&&chrome.storage&&chrome.storage.local)await chrome.storage.local.set({frostline_discardCfg:DISC1,frostline_dimmerCfg:DIM1,frostline_ytCfg:YT1});}catch{}
@@ -482,8 +482,8 @@ function saveDim(){store.set('dimmerCfg',dim);store.set('dimmerSites',dimSites);
 
 function renderDimmer(){dimEnsureShape();const t=$('#dim-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Shade',dim.enabled,()=>{dim.enabled=dim.enabled?0:1;saveDim();renderDimmer();}));t.appendChild(toggleRow('Whitescreen protection',dim.white,()=>{dim.white=dim.white?0:1;saveDim();renderDimmer();}));t.appendChild(toggleRow('Dark mode',dim.dark,()=>{dim.dark=dim.dark?0:1;saveDim();renderDimmer();}));}}
 function flashScopeDenied(btn){if(!btn)return;btn.classList.add('denied');setTimeout(()=>btn.classList.remove('denied'),650);}
-let yt=Object.assign({enabled:1,wfs:1,remember:1,shortcut:1},store.get('ytCfg',{}));
-function thShapeY(){if(typeof yt.wfs!=='number')yt.wfs=yt.wfs?1:1;if(typeof yt.remember!=='number')yt.remember=yt.remember?1:1;if(typeof yt.shortcut!=='number')yt.shortcut=yt.shortcut?1:1;}
+let yt=Object.assign({enabled:1,wfs:0,remember:1,shortcut:1},store.get('ytCfg',{}));
+function thShapeY(){if(typeof yt.wfs!=='number')yt.wfs=yt.wfs?1:0;if(typeof yt.remember!=='number')yt.remember=yt.remember?1:1;if(typeof yt.shortcut!=='number')yt.shortcut=yt.shortcut?1:1;}
 function saveYt(push){thShapeY();const clean={enabled:yt.enabled?1:0,wfs:yt.wfs?1:0,remember:yt.remember?1:0,shortcut:yt.shortcut?1:0};yt=clean;store.set('ytCfg',clean);try{chrome.storage.local.set({frostline_ytCfg:clean});if(push!==false)chrome.runtime.sendMessage({cmd:'theater-apply'});}catch{}}
 function renderYT(){thShapeY();const t=$('#yt-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Theater',yt.enabled,()=>{yt.enabled=yt.enabled?0:1;saveYt();renderYT();}));t.appendChild(toggleRow('Remember per video',yt.remember,()=>{yt.remember=yt.remember?0:1;saveYt(false);renderYT();}));t.appendChild(toggleRow('Keyboard shortcut',yt.shortcut,()=>{yt.shortcut=yt.shortcut?0:1;saveYt(false);renderYT();}));}}
 try{if(!window.__frostlineYtSync){window.__frostlineYtSync=1;chrome.storage.onChanged.addListener((ch,area)=>{if(area==='local'&&ch.frostline_ytCfg&&ch.frostline_ytCfg.newValue){try{yt=Object.assign(yt,ch.frostline_ytCfg.newValue);thShapeY();renderYT();}catch{}}});}}catch{}

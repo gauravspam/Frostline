@@ -130,8 +130,6 @@ function dimCss(cfg,boost){
     // Media scope paints with element filters, so the page overlay must stay off.
     // Neutralise it explicitly rather than relying on removal by a later insert.
     css+='html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}';
-    // Disable Shade media filters on YouTube video when Theater windowed fullscreen is active.
-    css+='html.frostline-th-wfs img,html.frostline-th-wfs video,html.frostline-th-wfs canvas,html.frostline-th-wfs picture,html.frostline-th-wfs [style*="background-image"]{filter:none!important}';
   }else{
     // Page scope paints via an overlay on the top layer. A pseudo-element on the
     // root element is unreliable where the app promotes its root into a stacking
@@ -147,11 +145,12 @@ function dimCss(cfg,boost){
     if(ba>0)layers.push('linear-gradient(rgba(0,0,0,'+ba.toFixed(3)+'),rgba(0,0,0,'+ba.toFixed(3)+'))');
     if(gate>0&&(active==='dimmer'||active==='reader'))layers.push('linear-gradient(rgba(0,0,0,'+gate.toFixed(3)+'),rgba(0,0,0,'+gate.toFixed(3)+'))');
     css+='html.frostline-ov{--frostline-ov-bg:'+(layers.length?layers.join(','):'transparent')+';--frostline-ov-blur:'+(brad||'0')+'px}';
-    // Hide Shade overlay when Theater windowed fullscreen is active to avoid
-    // z-index conflicts and unwanted dimming/blur on the video.
-    css+='html.frostline-th-wfs.frostline-ov::before{display:none!important}';
+    // Keep the page overlay BELOW the windowed player so Theater stays crisp:
+    // windowed mode pins #movie_player as a fixed element, so any element that
+    // paints above it (a full-viewport pseudo-element at max z-index) covers
+    // the video instead of dimming it.
+    css+='html.frostline-ov::before{content:""!important;position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;z-index:1!important;pointer-events:none!important;background:var(--frostline-ov-bg)!important;backdrop-filter:blur(var(--frostline-ov-blur))!important;-webkit-backdrop-filter:blur(var(--frostline-ov-blur))!important;margin:0!important;padding:0!important;border:0!important;transition:opacity 150ms ease,backdrop-filter 150ms ease!important}';
     css+='html.frostline-th-wfs.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}';
-    css+='html.frostline-ov::before{content:""!important;position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;pointer-events:none!important;background:var(--frostline-ov-bg)!important;backdrop-filter:blur(var(--frostline-ov-blur))!important;-webkit-backdrop-filter:blur(var(--frostline-ov-blur))!important;margin:0!important;padding:0!important;border:0!important;transition:opacity 150ms ease,backdrop-filter 150ms ease!important}';
   }
   css+='@media print{html.frostline-ov::before,html.frostline-ov::after{display:none!important}}';
   return{css};
@@ -246,7 +245,8 @@ function dimMismatch(p,cfg){
   return !overlay;
 }
 async function dimVerifyAll(){
-  const cfg=await dimCfg();let tabs=[];try{tabs=await chrome.tabs.query({});}catch{return null;}
+  const cfg=await dimCfg();let tabs=[];try{tabs=await chrome.tabs.query({active:true,currentWindow:true});}catch{return null;}
+  if(!tabs.length){try{tabs=await chrome.tabs.query({active:true});}catch{return null;}}
   const bad=[];
   for(const t of tabs){
     if(!/^https?:\/\//i.test(t.url||''))continue;
@@ -288,7 +288,7 @@ async function dimResetAll(){
 }
 // Frostline Theater engine (YouTube: windowed fullscreen)
 const TH_DEF={enabled:0,wfs:1,remember:1,shortcut:1};
-async function theaterCfg(){try{const o=await chrome.storage.local.get('frostline_ytCfg');return Object.assign({},TH_DEF,o.frostline_ytCfg||{});}catch{return Object.assign({},TH_DEF);}}
+async function theaterCfg(){try{const o=await chrome.storage.local.get('frostline_ytCfg');const c=Object.assign({},TH_DEF,o.frostline_ytCfg||{});if(typeof c.wfs!=='number')c.wfs=c.wfs?1:0;return c;}catch{return Object.assign({},TH_DEF,{wfs:0});}}
 function theaterVid(url){try{const u=new URL(url||'');const h=(u.hostname||'').toLowerCase();if(h.includes('youtube.com')){if(u.pathname==='/watch')return u.searchParams.get('v')||'';if(u.pathname.indexOf('/shorts/')===0)return u.pathname.split('/')[2]||'';return '';}if(h==='youtu.be'||h.endsWith('.youtu.be'))return (u.pathname||'').replace(/^\//,'').split('/')[0]||'';return '';}catch{return '';}}
 function theaterIsYT(url){return /^(https?:\/\/)?(www\.|m\.)?(youtube\.com\/(watch|shorts)|youtu\.be\/)/i.test(url||'');}
 async function theaterMem(){try{const o=await chrome.storage.local.get('frostline_theaterMem');return (o&&o.frostline_theaterMem)||{};}catch{return {};}}
@@ -316,6 +316,10 @@ function theaterCss(cfg){
   // inset:0 against a fixed root sizes the player to the viewport box without
   // pulling in the scrollbar gutter that a viewport width would add.
   if(cfg.wfs)css+='html.frostline-th-wfs #movie_player{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;z-index:2147483647!important}';
+  // YouTube sizes the inner video layer from the player's own aspect-ratio box,
+  // so pinning the player alone leaves the frame letterboxed and offset inside
+  // the viewport. Let the video layer fill the box and keep the frame intact.
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;object-fit:contain!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #content{padding-top:0!important}';
   css+=FROSTLINE_TIP_CSS;
   return{css};
@@ -380,12 +384,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='14'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='15'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='14';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='15';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -407,7 +411,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='14')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='15')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -495,7 +499,8 @@ function theaterMismatch(p,cfg){
   return !p.wfs||!p.fixed;
 }
 async function theaterVerifyAll(){
-  const cfg=await theaterCfg();let tabs=[];try{tabs=await chrome.tabs.query({});}catch{return null;}
+  const cfg=await theaterCfg();let tabs=[];try{tabs=await chrome.tabs.query({active:true,currentWindow:true});}catch{return null;}
+  if(!tabs.length){try{tabs=await chrome.tabs.query({active:true});}catch{return null;}}
   const bad=[];
   for(const t of tabs){
     if(!theaterIsYT(t.url||''))continue;

@@ -4,7 +4,9 @@
 (function () {
   if (window.__frostlineThCS) return;
   window.__frostlineThCS = 1;
-  const DEF = { enabled: 0, wfs: 1, remember: 1, shortcut: 1 };
+  // wfs defaults to 0: windowed mode is opt-in per session, otherwise every
+  // video opened from the homepage enters it before the user can react.
+  const DEF = { enabled: 0, wfs: 0, remember: 1, shortcut: 1 };
   let cfg = Object.assign({}, DEF);
   const store = (cb) => {
     try {
@@ -224,7 +226,7 @@
   function inject() {
     try {
       const ex = document.getElementById('frostline-th-wfs');
-      if (ex && ex.isConnected && ex.dataset.frostlineBv === '14') { paintB(); return true; }
+      if (ex && ex.isConnected && ex.dataset.frostlineBv === '15') { paintB(); return true; }
       if (ex) { try { ex.remove(); } catch {} }
       const old = document.getElementById('frostline-th-str');
       if (old) { try { old.remove(); } catch {} }
@@ -235,7 +237,7 @@
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
-        b.dataset.frostlineBv = '14';
+        b.dataset.frostlineBv = '15';
         b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
@@ -291,7 +293,7 @@
         const cur = document.getElementById('frostline-th-wfs');
         // Also re-inject when the button survives but a stale-stamp node is
         // present, so a markup change self-heals in already-open tabs.
-        if (cur && cur.isConnected && cur.dataset.frostlineBv === '14') return;
+        if (cur && cur.isConnected && cur.dataset.frostlineBv === '15') return;
         const now = Date.now();
         if (now - last < 400) return;
         last = now;
@@ -328,7 +330,7 @@
     } catch {}
   }
   function boot() {
-    try { document.documentElement.dataset.frostlineTh = '1.4.43'; } catch {}
+    try { document.documentElement.dataset.frostlineTh = '1.4.44'; } catch {}
     store(() => {
       if (!cfg.enabled) { cleanup(); return; }
       try { applyAll(); } catch {}
