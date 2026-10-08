@@ -269,12 +269,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='9'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='10'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='9';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='10';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -296,7 +296,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='9')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='10')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });

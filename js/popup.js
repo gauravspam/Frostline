@@ -3,7 +3,7 @@ const store = {
   get: (k, d) => { try { const v = localStorage.getItem('frostline_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem('frostline_' + k, JSON.stringify(v)); } catch {} },
 };
-let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 0, reader: 0, blur: 50 }, edit: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
+let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 0, reader: 0, blur: 0 }, edit: 'dimmer', mode: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
 function dimEnsureShapeP(){
   dim.fx = dim.fx || {};
   // Fill in MISSING values only; a stored 0 is a deliberate choice and is kept.
@@ -22,6 +22,19 @@ function dimEnsureShapeP(){
 }
 (function(){try{if(!localStorage.getItem('frostline_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('frostline_fxMigrated','1');}}catch{}})();
 (function(){try{if(!localStorage.getItem('frostline_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));store.set('dimmerCfg',d);dim.intensity=d.intensity;}localStorage.setItem('frostline_dimMigrated','1');}}catch{}})();
+// The worker reads Shade from chrome.storage.local; the popup read only
+// localStorage, so the two could disagree and the popup could show Shade off
+// while the engine kept painting a stale blur into every tab. Adopt the worker's
+// copy as the starting state and mirror it back to localStorage.
+function adoptDim(next) {
+  if (!next || typeof next !== 'object') return;
+  dim = Object.assign(dim, next);
+  dimEnsureShapeP();
+  store.set('dimmerCfg', dim);
+}
+try {
+  chrome.storage.local.get('frostline_dimmerCfg', o => { try { adoptDim(o && o.frostline_dimmerCfg); } catch {} paint(); });
+} catch {}
 let pushT = null;
 function saveDim() {
   store.set('dimmerCfg', dim);
@@ -61,10 +74,9 @@ document.querySelectorAll('#pp-mode button').forEach(b => b.onclick = () => {
   dim.edit = k;
   dim.mode = k;
   dim.scopes[k] = cur;
-  dim.fx[k] = 1;
-  // Give a never-configured mode a visible starting value, but never override a
-  // value the user has deliberately set to 0.
-  if (typeof dim.vals[k] !== 'number' || !isFinite(dim.vals[k])) dim.vals[k] = k === 'blur' ? 50 : 75;
+  // Arming is driven by the value, not by the click. A mode whose value is 0 is a
+  // deliberate off state, so clicking it must not switch the effect back on.
+  dim.fx[k] = (+dim.vals[k] > 0) ? 1 : 0;
   saveDim();
   paint();
 });
