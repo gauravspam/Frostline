@@ -82,7 +82,18 @@ async function dimCfg(){try{const o=await chrome.storage.local.get('frostline_di
 // off. Both branches below therefore always emit the neutralising rules for the
 // page overlay (::before), the legacy overlay (::after) and the media filters.
 const DIM_NEUTRAL = 'html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}img,video,canvas,picture,[style*="background-image"]{filter:none!important}';
+// A tab can hold more than one live ruleset: the neutral guard plus whichever
+// effect was last painted. Tracking only the newest string meant removeCSS could
+// never target an older one, so any rule orphaned by a worker restart stayed live
+// and had to be beaten by insertion order alone.
 const dimCssCache=new Map();
+function dimTrack(tabId){let s=dimCssCache.get(tabId);if(!s){s=new Set();dimCssCache.set(tabId,s);}return s;}
+async function dimRemoveAll(tabId){
+  const s=dimCssCache.get(tabId);
+  if(!s||!s.size)return;
+  for(const css of Array.from(s)){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:css});}catch{}}
+  s.clear();
+}
 // Shade modes are MUTUALLY EXCLUSIVE: the UI shows one mode (dim/reader/blur),
 // one value and one scope. Only the active mode may paint. Treating all three
 // as simultaneous layers stacked up to an alpha of 1.0, which is why switching
@@ -142,13 +153,15 @@ function dimCss(cfg,boost){
 async function dimApply(tabId,cfg){
   try{
     if(!cfg.enabled){
-      try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{var o=document.getElementById('frostline-dimmer-ov');if(o)o.remove();document.documentElement.classList.remove('frostline-darkdm','frostline-monly');}catch(e){}}});}catch{}
-      const old=dimCssCache.get(tabId);
-      if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}dimCssCache.delete(tabId);}
+      // Dropping frostline-ov makes every overlay rule inert on its own, because
+      // they are all scoped to that class, and clearing the variables means a rule
+      // that survives for any reason has nothing left to paint.
+      try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{var o=document.getElementById('frostline-dimmer-ov');if(o)o.remove();var h=document.documentElement;h.classList.remove('frostline-darkdm','frostline-monly','frostline-ov');h.style.removeProperty('--frostline-ov-bg');h.style.removeProperty('--frostline-ov-blur');}catch(e){}}});}catch{}
+      await dimRemoveAll(tabId);
       // Use the same self-cancelling rule set as the no-op path. Hiding only
       // ::after here left the ::before page overlay alive, so a blur installed
       // while Shade was on kept painting after Shade was switched off.
-      try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:DIM_NEUTRAL});dimCssCache.set(tabId,DIM_NEUTRAL);}catch{}
+      try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:DIM_NEUTRAL});dimTrack(tabId).add(DIM_NEUTRAL);}catch{}
       return{ok:true};
     }
     let boost=0;
@@ -162,9 +175,8 @@ async function dimApply(tabId,cfg){
     // document, and YouTube's SPA navigation plus every full reload discards it
     // while our Map still holds the old string - so the guard would skip the
     // re-insert and Shade silently stopped applying until the worker restarted.
-    const old=dimCssCache.get(tabId);
-    if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}dimCssCache.delete(tabId);}
-    try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});dimCssCache.set(tabId,built.css);}
+    await dimRemoveAll(tabId);
+    try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});dimTrack(tabId).add(built.css);}
     catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
     return{ok:true};
   }catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
@@ -269,12 +281,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='10'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='11'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='10';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='11';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -296,7 +308,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='10')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='11')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -364,7 +376,7 @@ async function theaterApplyAll(){
   try{await chrome.storage.local.set({frostline_theaterStatus:{ts:Date.now(),tabs:n,applied:n,failed:f,lastErr}});}catch{}
   return{ok:true,applied:n,failed:f};
 }
-chrome.tabs.onActivated.addListener(async info=>{try{const id=info&&info.tabId;if(!id)return;const dc=await dimCfg();if(dc.enabled||dimCssCache.get(id))await dimApply(id,dc);let url='';try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}const tc=await theaterCfg();if(tc.enabled||theaterCssCache.has(id))await theaterApply(id,tc,url);}catch{}});
+chrome.tabs.onActivated.addListener(async info=>{try{const id=info&&info.tabId;if(!id)return;const dc=await dimCfg();await dimApply(id,dc);let url='';try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}const tc=await theaterCfg();await theaterApply(id,tc,url);}catch{}});
 chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info&&info.status==='complete'){dimCfg().then(cfg=>dimApply(id,cfg));(async()=>{try{let url=(tab&&tab.url)||'';if(!url){try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}}const c=await theaterCfg();await theaterApply(id,c,url);}catch{}})();}});
 function setupDiscardMenus(){try{const contexts=['page'];if(chrome.contextMenus.ContextType&&chrome.contextMenus.ContextType.TAB)contexts.unshift('tab');chrome.contextMenus.removeAll(()=>{
   chrome.contextMenus.create({id:'frostline-disc',title:'Discard Tabs',contexts});
