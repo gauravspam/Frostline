@@ -112,9 +112,9 @@ function dimCss(cfg,boost){
     css+='img,video,canvas,picture,[style*="background-image"]{filter:'+f+'!important;transition:filter 150ms ease!important}';
     css+='html.frostline-ov::after{display:none!important}';
   }else{
-    // Page scope paints with a fixed overlay appended to the top layer. A
-    // pseudo-element on <html> is unreliable on SPAs whose root element is
-    // promoted to its own stacking context, so use a real element instead.
+    // Page scope paints via an overlay on the top layer. A pseudo-element on the
+    // root element is unreliable where the app promotes its root into a stacking
+    // context of its own, so drive a real fixed overlay with custom properties.
     css+='html.frostline-ov::after{display:none!important}';
     const layers=[];let brad=0;
     if(active==='reader'){const wa=Math.min(0.42,amt*0.5);layers.push('linear-gradient(rgba(255,196,130,'+wa.toFixed(3)+'),rgba(255,196,130,'+wa.toFixed(3)+'))');}
