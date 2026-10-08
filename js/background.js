@@ -122,9 +122,14 @@ async function dimApply(tabId,cfg){
       document.documentElement.classList.add('frostline-ov');
     }catch(e){}},args:[cfg.mode,!!cfg.dark]});
     const built=dimCss(cfg,boost);
+    // Always replace rather than trusting the cache. insertCSS is bound to the
+    // document, and YouTube's SPA navigation plus every full reload discards it
+    // while our Map still holds the old string - so the guard would skip the
+    // re-insert and Shade silently stopped applying until the worker restarted.
     const old=dimCssCache.get(tabId);
-    if(old&&old!==built.css){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}}
-    if(!old||old!==built.css){try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});}catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}dimCssCache.set(tabId,built.css);}
+    if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}dimCssCache.delete(tabId);}
+    try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:built.css});dimCssCache.set(tabId,built.css);}
+    catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
     return{ok:true};
   }catch(e){return{ok:false,err:String((e&&e.message)||e).slice(0,140)};}
 }
@@ -150,6 +155,11 @@ const FROSTLINE_TIP_CSS = '#frostline-th-tip.ytp-tooltip{position:absolute!impor
 function theaterCss(cfg){
   let css='';
   css+='@media print{html.frostline-th-wfs{overflow:visible!important}}';
+  // Windowed mode makes #movie_player position:fixed, so the YouTube control bar
+  // is absolutely positioned against a fixed ancestor. Pin our button to its
+  // normal in-flow slot and stop it inheriting the translateY from the chrome
+  // auto-hide animation, which otherwise parks it off-screen until the bar settles.
+  css+='.frostline-th-btn{flex:0 0 auto!important;align-self:center!important;position:relative!important;opacity:1!important;visibility:visible!important;transform:none!important;translate:none!important;transition:none!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #primary,html.frostline-th-wfs #player-container-outer,html.frostline-th-wfs ytd-watch-flexy{width:100vw!important;max-width:100vw!important}html.frostline-th-wfs #movie_player{width:100vw!important;height:100vh!important;position:fixed!important;top:0!important;left:0!important;z-index:2147483647!important}html.frostline-th-wfs #content{padding-top:0!important}';
   css+=FROSTLINE_TIP_CSS;
   return{css};
@@ -214,12 +224,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='6'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='7'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='6';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='7';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -232,6 +242,23 @@ function frostlineTheaterBoot(cfg){
       }catch(_){return false;}
     };
     if(window.__frostlineThBtnIv){try{clearInterval(window.__frostlineThBtnIv);}catch(_){}window.__frostlineThBtnIv=0;}
+    // YouTube rebuilds .ytp-right-controls on quality changes, theater toggles
+    // and fullscreen transitions, which destroys the injected button. Watch the
+    // bar and re-inject when it goes missing, otherwise the control stays absent
+    // until the page is reloaded.
+    if(!window.__frostlineThObs){
+      try{
+        var last=0;
+        var ob=new MutationObserver(function(){
+          var cur=document.getElementById('frostline-th-wfs');
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='7')return;
+          var now=Date.now();if(now-last<400)return;last=now;
+          try{inject();}catch(_){}
+        });
+        window.__frostlineThObs=ob;
+        ob.observe(document.body,{childList:true,subtree:true});
+      }catch(_){}
+    }
     if(!inject()){try{window.__frostlineThBtnIv=setInterval(function(){if(inject()){try{clearInterval(window.__frostlineThBtnIv);}catch(_){}window.__frostlineThBtnIv=0;}},1000);}catch(_){}}
   }catch(_){}
 }

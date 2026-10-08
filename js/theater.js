@@ -213,7 +213,7 @@
   function inject() {
     try {
       const ex = document.getElementById('frostline-th-wfs');
-      if (ex && ex.isConnected && ex.dataset.frostlineBv === '6') { paintB(); return true; }
+      if (ex && ex.isConnected && ex.dataset.frostlineBv === '7') { paintB(); return true; }
       if (ex) { try { ex.remove(); } catch {} }
       const old = document.getElementById('frostline-th-str');
       if (old) { try { old.remove(); } catch {} }
@@ -224,7 +224,7 @@
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
-        b.dataset.frostlineBv = '6';
+        b.dataset.frostlineBv = '7';
         b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
@@ -278,9 +278,11 @@
       const ob = new MutationObserver(() => {
         if (!cfg.enabled) return;
         const cur = document.getElementById('frostline-th-wfs');
-        if (cur && cur.isConnected) return;
+        // Also re-inject when the button survives but a stale-stamp node is
+        // present, so a markup change self-heals in already-open tabs.
+        if (cur && cur.isConnected && cur.dataset.frostlineBv === '7') return;
         const now = Date.now();
-        if (now - last < 800) return;
+        if (now - last < 400) return;
         last = now;
         inject();
       });
@@ -315,7 +317,7 @@
     } catch {}
   }
   function boot() {
-    try { document.documentElement.dataset.frostlineTh = '1.4.35'; } catch {}
+    try { document.documentElement.dataset.frostlineTh = '1.4.36'; } catch {}
     store(() => {
       if (!cfg.enabled) { cleanup(); return; }
       try { applyAll(); } catch {}

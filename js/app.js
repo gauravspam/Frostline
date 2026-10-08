@@ -451,7 +451,19 @@ function syncDiscPresets(){try{$$('#disc-presets button').forEach(b=>{const q=DI
 function fxEq(x,y){x=x||{};y=y||{};return!!x.dimmer===!!y.dimmer&&!!x.reader===!!y.reader&&!!x.blur===!!y.blur;}
 
 function dimValsMatch(pv){const v=(dim.vals||{});return Object.keys(pv).every(k=>v[k]===pv[k]);}
-function dimEnsureShape(){dim.fx=dim.fx||{};dim.vals=Object.assign({dimmer:45,reader:75,blur:50},dim.vals||{});if(!['dimmer','reader','blur'].includes(dim.edit))dim.edit='dimmer';dim.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},dim.scopes||{});}
+function dimEnsureShape(){
+  dim.fx=dim.fx||{};
+  // Repair explicit zeros: the fresh seed writes vals:{0,0,0}, which
+  // Object.assign will not overwrite, so the config stays at zero and dimCss
+  // emits no overlay and no filter at all.
+  const DEF={dimmer:45,reader:75,blur:50};
+  dim.vals=Object.assign({},DEF,dim.vals||{});
+  ['dimmer','reader','blur'].forEach(k=>{if(typeof dim.vals[k]!=='number'||!isFinite(dim.vals[k])||dim.vals[k]<=0)dim.vals[k]=DEF[k];});
+  if(!['dimmer','reader','blur'].includes(dim.edit))dim.edit='dimmer';
+  if(!dim.fx.dimmer&&!dim.fx.reader&&!dim.fx.blur)dim.fx.dimmer=1;
+  dim.fx[dim.edit]=1;
+  dim.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},dim.scopes||{});
+}
 function saveDisc(){store.set('discardCfg',disc);try{chrome.storage.local.set({frostline_discardCfg:disc});}catch{}}
 function renderDiscard(){const t=$('#disc-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Discard',disc.enabled,()=>{disc.enabled=disc.enabled?0:1;saveDisc();renderDiscard();}));}const s=$('#disc-sliders');if(s){s.innerHTML='';s.appendChild(sliderRow('Idle Minutes','Tabs inactive this long become eligible',1,120,1,disc.idle,v=>v+'m',v=>{disc.idle=v;saveDisc();syncDiscPresets();}));s.appendChild(sliderRow('Grace Period',"Don't discard tabs newer than this",10,300,5,disc.grace,v=>v+'s',v=>{disc.grace=v;saveDisc();syncDiscPresets();}));s.appendChild(sliderRow('Min Inactive Tabs','',1,20,1,disc.minTabs,v=>''+v,v=>{disc.minTabs=v;saveDisc();syncDiscPresets();}));}const t2=$('#disc-toggles2');if(t2){t2.innerHTML='';[['neverActive','Never discard active tab'],['neverAudible','Never discard audible tab'],['neverPinned','Never discard pinned tab'],['neverForm','Never discard unsaved forms'],['memPressure','Memory pressure']].forEach(([k,label])=>{t2.appendChild(toggleRow(label,disc[k],()=>{disc[k]=disc[k]?0:1;saveDisc();renderDiscard();}));});if(disc.memPressure)t2.appendChild(sliderRow('Free-memory threshold','',5,50,1,disc.memThreshold,v=>v+'%',v=>{disc.memThreshold=v;saveDisc();}));}const w=$('#disc-wl');if(w&&w.value!==disc.whitelist)w.value=disc.whitelist;syncDiscPresets();paintDiscStatus();}
 function paintDiscStatus(){const el=$('#disc-status');if(!el)return;const done=s=>{if(!s||!s.ts){el.textContent='No runs yet — press Discard now or wait for the minute check.';return;}const d=new Date(s.ts);const p2=n=>String(n).padStart(2,'0');el.textContent=`Last check ${p2(d.getHours())}:${p2(d.getMinutes())} · ${s.checked||0} tabs · ${s.discarded||0} discarded${s.failed?` · ${s.failed} mark failed${s.lastErr?': '+s.lastErr:''}`:''}`;};try{if(chrome.storage&&chrome.storage.local)chrome.storage.local.get('frostline_discStatus',o=>done(o&&o.frostline_discStatus));else done(null);}catch{done(null);}}
