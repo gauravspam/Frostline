@@ -49,9 +49,17 @@ function paint() {
   dimEnsureShapeP();
   if (r && document.activeElement !== r) r.value = dim.vals[dim.edit];
   const v = document.querySelector('#pp-val');
-  if (v) v.textContent = dim.vals[dim.edit] + '% — ' + (dim.edit === 'dimmer' ? 'dim' : dim.edit);
+  const isPreview = dim.edit !== dim.mode;
+  if (v) v.textContent = dim.vals[dim.edit] + '% - ' + (dim.edit === 'dimmer' ? 'dim' : dim.edit) + (isPreview ? ' (preview)' : '');
+  v && v.classList.toggle('preview', isPreview);
   document.querySelectorAll('#pp-mode button').forEach(b => { const sel = dim.edit === b.dataset.m; b.classList.toggle('on', sel); b.classList.toggle('edit', sel); });
-  document.querySelectorAll('#pp-scope button').forEach(b => b.classList.toggle('on', b.dataset.s === ((dim.scopes || {})[dim.edit || 'dimmer'] || 'page')));
+  // Media scope is not effective for Reader (no sepia on media); disable that button.
+  const readerMedia = dim.edit === 'reader';
+  document.querySelectorAll('#pp-scope button').forEach(b => {
+    const on = b.dataset.s === ((dim.scopes || {})[dim.edit || 'dimmer'] || 'page');
+    b.classList.toggle('on', on);
+    b.disabled = readerMedia && b.dataset.s === 'media';
+  });
 }
 document.querySelector('#pp-toggle').onclick = () => { dim.enabled = dim.enabled ? 0 : 1; saveDim(); paint(); };
 document.querySelector('#pp-intensity').oninput = e => {

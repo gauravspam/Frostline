@@ -162,6 +162,9 @@ async function dimApply(tabId,cfg){
       // ::after here left the ::before page overlay alive, so a blur installed
       // while Shade was on kept painting after Shade was switched off.
       try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:DIM_NEUTRAL});dimTrack(tabId).add(DIM_NEUTRAL);}catch{}
+      // Re-add the class so DIM_NEUTRAL rules match. Without the class, the
+      // neutral rules don't apply and stale media-scope filters can leak through.
+      try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
       return{ok:true};
     }
     let boost=0;
@@ -196,10 +199,17 @@ async function dimProbe(tabId){
     const r=await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{
       var h=document.documentElement,g=getComputedStyle(h),b=getComputedStyle(h,'::before');
       var v=document.querySelector('video');
+      var vf=v?getComputedStyle(v).filter:'none';
+      // Detect Shade media-scope fingerprint: brightness < 1 + optional sepia/saturate/blur
+      var shadeMedia=false;
+      if(vf!=='none'){
+        var m=vf.match(/brightness\(([\d.]+)\)/);
+        if(m&&parseFloat(m[1])<0.98)shadeMedia=true;
+      }
       return{ov:h.classList.contains('frostline-ov'),dm:h.classList.contains('frostline-darkdm'),
         bd:b.display,blur:g.getPropertyValue('--frostline-ov-blur').trim(),
-        vf:v?getComputedStyle(v).filter:'none'};
-    }catch(e){return null;}}});
+        vf:vf,shadeMedia:shadeMedia};
+    }catch(e){return null;}}}); 
     return(r&&r[0])?r[0].result:null;
   }catch{return null;}
 }
@@ -212,17 +222,20 @@ function dimExpect(cfg){
   const armed=!!(FX[active]!==undefined?FX[active]:1);
   const raw=(typeof vals[active]==='number'?vals[active]:DEF[active]);
   const amt=armed?Math.min(100,Math.max(0,raw))/100:0;
-  return{paints:!!cfg.enabled&&amt>0,scope};
+  return{paints:!!cfg.enabled&&amt>0,scope,active,amt};
 }
 // Only flag the one disagreement that is unambiguous and cannot false-positive:
 // Shade is configured to paint nothing, yet the page is still painting an effect.
 function dimMismatch(p,cfg){
   if(!p)return false;
-  const overlay=p.ov&&(parseFloat(p.blur||'0')>0||(p.bd&&p.bd!=='none'));
-  const media=!!(p.vf&&p.vf!=='none');
   const e=dimExpect(cfg);
-  if(!e.paints)return p.ov||overlay||media;
-  if(e.scope==='media')return !media;
+  const overlay=p.ov&&(parseFloat(p.blur||'0')>0||(p.bd&&p.bd!=='none'));
+  const shadeMedia=p.shadeMedia;
+  if(!e.paints){
+    // Only flag if Shade-specific artifacts remain
+    return p.ov||overlay||shadeMedia;
+  }
+  if(e.scope==='media')return !shadeMedia;
   return !overlay;
 }
 async function dimVerifyAll(){
@@ -254,6 +267,8 @@ async function dimResetAll(){
       }catch(e){}}});
       await dimRemoveAll(t.id);
       try{await chrome.scripting.insertCSS({target:{tabId:t.id},css:DIM_NEUTRAL});dimTrack(t.id).add(DIM_NEUTRAL);}catch{}
+      // Re-add class so DIM_NEUTRAL matches
+      try{await chrome.scripting.executeScript({target:{tabId:t.id},func:()=>{try{document.documentElement.classList.add('frostline-ov');}catch(e){}}});}catch{}
       n++;
     }catch{}
   }
@@ -354,12 +369,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='12'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='13'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='12';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='13';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -381,7 +396,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='12')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='13')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -498,13 +513,16 @@ async function theaterResetAll(){
 }
 chrome.tabs.onActivated.addListener(async info=>{try{const id=info&&info.tabId;if(!id)return;const dc=await dimCfg();await dimApply(id,dc);let url='';try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}const tc=await theaterCfg();await theaterApply(id,tc,url);await dimVerifyAll();await theaterVerifyAll();}catch{}});
 chrome.tabs.onUpdated.addListener((id,info,tab)=>{if(info&&info.status==='complete'){dimCfg().then(cfg=>dimApply(id,cfg));(async()=>{try{let url=(tab&&tab.url)||'';if(!url){try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}}const c=await theaterCfg();await theaterApply(id,c,url);}catch{}})();dimVerifyAll();theaterVerifyAll();}});
+// YouTube is an SPA - internal navigation doesn't fire onUpdated. Use webNavigation
+// to re-verify after each YouTube page transition.
+try{chrome.webNavigation.onCompleted.addListener(async d=>{if(!d||!d.url||!theaterIsYT(d.url))return;try{const dc=await dimCfg();await dimApply(d.tabId,dc);const tc=await theaterCfg();await theaterApply(d.tabId,tc,d.url);await dimVerifyAll();await theaterVerifyAll();}catch{}});}catch{}
 function setupDiscardMenus(){try{const contexts=['page'];if(chrome.contextMenus.ContextType&&chrome.contextMenus.ContextType.TAB)contexts.unshift('tab');chrome.contextMenus.removeAll(()=>{
   chrome.contextMenus.create({id:'frostline-disc',title:'Discard Tabs',contexts});
   [['this','Discard this tab'],['right','Discard tabs to the right'],['left','Discard tabs to the left'],['others','Discard all other tabs'],['release','Release all tabs']].forEach(([id,title])=>chrome.contextMenus.create({id:'frostline-disc-'+id,parentId:'frostline-disc',title,contexts}));
 });}catch{}}
 chrome.runtime.onInstalled.addListener(details=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();try{if(details&&details.reason==='install'&&chrome.storage&&chrome.storage.local){chrome.storage.local.get(null,all=>{try{const set={};if(!all||!('frostline_discardCfg' in all))set.frostline_discardCfg=Object.assign({},DISC_DEF,{enabled:1});if(!all||!('frostline_ytCfg' in all))set.frostline_ytCfg={enabled:1,wfs:1,remember:1,shortcut:1};if(!all||!('frostline_dimmerCfg' in all))set.frostline_dimmerCfg={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:1,reader:0,blur:0},edit:'dimmer',mode:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};if(Object.keys(set).length)chrome.storage.local.set(set);}catch{}});}}catch{}dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
 chrome.runtime.onStartup.addListener(()=>{try{chrome.alarms.create('frostline-discard',{periodInMinutes:1});}catch{}setupDiscardMenus();dimApplyAll().catch(()=>{});theaterApplyAll().catch(()=>{});});
-async function workerCompletePomo(){try{const o=await chrome.storage.local.get('frostline_pomo');const p=o&&o.frostline_pomo;if(!p||!p.running||!p.endAt)return;const done={base:p.base||0,running:false,endAt:0,left:0};await chrome.storage.local.set({frostline_pomo:done});try{chrome.runtime.sendMessage({cmd:'pomo-beep'});}catch{}try{chrome.notifications.create({type:'basic',title:'Focus session complete',message:'Pomodorodinha timer finished — nice work!',iconUrl:chrome.runtime.getURL('assets/icon128.png'),silent:false});}catch{}}catch{}}
+async function workerCompletePomo(){try{const o=await chrome.storage.local.get('frostline_pomo');const p=o&&o.frostline_pomo;if(!p||!p.running||!p.endAt)return;const done={base:p.base||0,running:false,endAt:0,left:0};await chrome.storage.local.set({frostline_pomo:done});try{chrome.runtime.sendMessage({cmd:'pomo-beep'});}catch{}try{chrome.notifications.create({type:'basic',title:'Focus session complete',message:'Pomodorodinha timer finished - nice work!',iconUrl:chrome.runtime.getURL('assets/icon128.png'),silent:false});}catch{}}catch{}}
 chrome.alarms.onAlarm.addListener(a=>{if(!a)return;if(a.name==='frostline-discard'){autoDiscard();return;}if(a.name==='pomo-end'){workerCompletePomo();return;}});
 chrome.runtime.onMessage.addListener((msg,sender,sendResponse)=>{if(msg&&msg.cmd==='pomo-start'){const _en=+msg.endAt||0;if(_en){try{chrome.alarms.create('pomo-end',{when:_en});}catch{}}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='pomo-stop'){try{chrome.alarms.clear('pomo-end');}catch{}try{sendResponse({ok:true});}catch{}return true;}if(msg&&msg.cmd==='discard-now'){autoDiscard().then(r=>{try{sendResponse(r||{discarded:0});}catch{}});return true;}if(msg&&msg.cmd==='dim-apply'){dimApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-status'){dimVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='shade-reset'){dimResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-status'){theaterVerifyAll().then(r=>{try{sendResponse(r||{mismatch:false,tabs:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-reset'){theaterResetAll().then(r=>{try{sendResponse(r||{ok:false,reset:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-apply'){theaterApplyAll().then(r=>{try{sendResponse(r||{ok:false,applied:0,failed:0});}catch{}});return true;}if(msg&&msg.cmd==='theater-btn'){try{(async()=>{try{const cur=await theaterCfg();const pt=(msg&&msg.patch)||{};const upd={};if(typeof pt.wfs!=='undefined')upd.wfs=pt.wfs?1:0;const next=Object.assign({},cur,upd);await chrome.storage.local.set({frostline_ytCfg:next});if(msg.vid&&cur.remember){try{const mem=await theaterMem();mem[msg.vid]={wfs:next.wfs?1:0};await theaterMemSave(mem);}catch{}}try{sendResponse({ok:true});}catch{}}catch{try{sendResponse({ok:false});}catch{}}})();}catch{try{sendResponse({ok:false});}catch{}}return true;}});
 chrome.contextMenus.onClicked.addListener((info,tab)=>{const id=String((info&&info.menuItemId)||'');if(id==='frostline-disc-release'){releaseTabs(tab||null);return;}if(id.indexOf('frostline-disc-')===0)manualDiscard(id.slice('frostline-disc-'.length),tab||null);});
