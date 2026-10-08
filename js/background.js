@@ -75,7 +75,13 @@ async function manualDiscard(mode,src){
   }
   return n;
 }
-async function dimCfg(){try{const o=await chrome.storage.local.get('frostline_dimmerCfg');return Object.assign({enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:45,reader:75,blur:50},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}},o.frostline_dimmerCfg||{});}catch{return{enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:45,reader:75,blur:50},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};}}
+async function dimCfg(){try{const o=await chrome.storage.local.get('frostline_dimmerCfg');return Object.assign({enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:0,reader:0,blur:0},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}},o.frostline_dimmerCfg||{});}catch{return{enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:0,reader:0,blur:0},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};}}
+// Every dimCss result must be a complete, self-cancelling rule set. insertCSS
+// accumulates, so a rule set that omits the overlay it previously installed can
+// never remove it - that is how a blur kept painting after Shade was switched
+// off. Both branches below therefore always emit the neutralising rules for the
+// page overlay (::before), the legacy overlay (::after) and the media filters.
+const DIM_NEUTRAL = 'html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}img,video,canvas,picture,[style*="background-image"]{filter:none!important}';
 const dimCssCache=new Map();
 // Shade modes are MUTUALLY EXCLUSIVE: the UI shows one mode (dim/reader/blur),
 // one value and one scope. Only the active mode may paint. Treating all three
@@ -84,7 +90,7 @@ const dimCssCache=new Map();
 // 0% value still left a veil behind.
 function dimCss(cfg,boost){
   const V=(k,fb)=>{const v=cfg.vals&&cfg.vals[k];return Math.min(100,Math.max(0,(typeof v==='number'?v:fb)))/100;};
-  const DEF={dimmer:45,reader:75,blur:50};
+  const DEF={dimmer:0,reader:0,blur:0};
   // A missing value falls back to its default; an explicit 0 is honoured.
   const vals=(cfg.vals&&typeof cfg.vals==='object')?cfg.vals:{};
   const FX=cfg.fx||{};
@@ -96,10 +102,10 @@ function dimCss(cfg,boost){
   let css='';
   if(cfg.dark)css+='html.frostline-darkdm{filter:invert(1) hue-rotate(180deg)!important;background:#111!important}html.frostline-darkdm img,html.frostline-darkdm video,html.frostline-darkdm canvas,html.frostline-darkdm picture{filter:invert(1) hue-rotate(180deg)!important}';
   if(amt<=0){
-    // Nothing selected, or the value is genuinely 0. Still clear any filter a
-    // previous mode installed so switching to a 0% mode is a true no-op.
-    css+='html.frostline-ov::before,html.frostline-ov::after{display:none!important}img,video,canvas,picture,[style*="background-image"]{filter:none!important}';
-    css+='@media print{html.frostline-ov::after{display:none!important}}';
+    // Nothing selected, or the value is genuinely 0. Neutralise everything a
+    // previous mode installed so 0% is a true no-op.
+    css+=DIM_NEUTRAL;
+    css+='@media print{html.frostline-ov::before,html.frostline-ov::after{display:none!important}}';
     return{css};
   }
   if(scope==='media'){
@@ -110,12 +116,16 @@ function dimCss(cfg,boost){
     if(active==='reader')f+=' sepia('+(amt*0.6).toFixed(2)+') saturate('+(1-amt*0.35).toFixed(2)+')';
     if(active==='blur')f+=' blur('+(amt*20).toFixed(1)+'px)';
     css+='img,video,canvas,picture,[style*="background-image"]{filter:'+f+'!important;transition:filter 150ms ease!important}';
-    css+='html.frostline-ov::after{display:none!important}';
+    // Media scope paints with element filters, so the page overlay must stay off.
+    // Neutralise it explicitly rather than relying on removal by a later insert.
+    css+='html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}';
   }else{
     // Page scope paints via an overlay on the top layer. A pseudo-element on the
     // root element is unreliable where the app promotes its root into a stacking
     // context of its own, so drive a real fixed overlay with custom properties.
     css+='html.frostline-ov::after{display:none!important}';
+    // Page scope paints with element filters cleared; the overlay supplies the effect.
+    css+='img,video,canvas,picture,[style*="background-image"]{filter:none!important}';
     const layers=[];let brad=0;
     if(active==='reader'){const wa=Math.min(0.42,amt*0.5);layers.push('linear-gradient(rgba(255,196,130,'+wa.toFixed(3)+'),rgba(255,196,130,'+wa.toFixed(3)+'))');}
     if(active==='blur'){brad=(amt*20).toFixed(1);layers.push('linear-gradient(rgba(0,0,0,'+(amt*0.25).toFixed(3)+'),rgba(0,0,0,'+(amt*0.25).toFixed(3)+'))');}
@@ -135,7 +145,10 @@ async function dimApply(tabId,cfg){
       try{await chrome.scripting.executeScript({target:{tabId:tabId},func:()=>{try{var o=document.getElementById('frostline-dimmer-ov');if(o)o.remove();document.documentElement.classList.remove('frostline-darkdm','frostline-monly');}catch(e){}}});}catch{}
       const old=dimCssCache.get(tabId);
       if(old){try{await chrome.scripting.removeCSS({target:{tabId:tabId},css:old});}catch{}dimCssCache.delete(tabId);}
-      try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:'html::after{display:none!important}img,video,canvas,picture,[style*="background-image"]{filter:none!important}'});}catch{}
+      // Use the same self-cancelling rule set as the no-op path. Hiding only
+      // ::after here left the ::before page overlay alive, so a blur installed
+      // while Shade was on kept painting after Shade was switched off.
+      try{await chrome.scripting.insertCSS({target:{tabId:tabId},css:DIM_NEUTRAL});dimCssCache.set(tabId,DIM_NEUTRAL);}catch{}
       return{ok:true};
     }
     let boost=0;
@@ -256,12 +269,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='8'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='9'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='8';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='9';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -283,7 +296,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='8')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='9')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -366,7 +379,7 @@ chrome.contextMenus.onClicked.addListener((info,tab)=>{const id=String((info&&in
 chrome.commands.onCommand.addListener(async cmd=>{
   try{
     const o=await chrome.storage.local.get('frostline_dimmerCfg');
-    const cfg=Object.assign({enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:45,reader:75,blur:50},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}},o.frostline_dimmerCfg||{});
+    const cfg=Object.assign({enabled:0,intensity:40,white:1,dark:0,fx:{dimmer:1},vals:{dimmer:0,reader:0,blur:0},edit:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}},o.frostline_dimmerCfg||{});
     if(cmd==='toggle-theater'){try{const t=await theaterCfg();if(!t.shortcut)return;await chrome.storage.local.set({frostline_ytCfg:Object.assign({},t,{enabled:t.enabled?0:1})});await theaterApplyAll();}catch{}return;}
     if(cmd==='toggle-dimmer')cfg.enabled=cfg.enabled?0:1;
     else if(cmd==='dimmer-up')cfg.intensity=Math.min(100,(+cfg.intensity||0)+10);

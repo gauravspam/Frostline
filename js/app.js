@@ -455,7 +455,7 @@ function dimEnsureShape(){
   dim.fx=dim.fx||{};
   // Fill in MISSING values only. A stored 0 is a deliberate user choice and must
   // survive: force-repairing zeros silently undid "set Dim to 0%".
-  const DEF={dimmer:45,reader:75,blur:50};
+  const DEF={dimmer:0,reader:0,blur:0};
   dim.vals=Object.assign({},DEF,dim.vals||{});
   ['dimmer','reader','blur'].forEach(k=>{const v=dim.vals[k];if(typeof v!=='number'||!isFinite(v)||v<0||v>100)dim.vals[k]=DEF[k];});
   if(!['dimmer','reader','blur'].includes(dim.edit))dim.edit='dimmer';
@@ -475,7 +475,7 @@ let dim=Object.assign({enabled:1,intensity:0,color:'black',blur:0,white:1,dark:0
 (function(){try{if(!localStorage.getItem('frostline_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));dim.intensity=d.intensity;saveDim();}localStorage.setItem('frostline_dimMigrated','1');}}catch{}})();
 (function(){try{if(!localStorage.getItem('frostline_modeMigrated')){const d=store.get('dimmerCfg',null);if(d){let mm=d.mode;if(d.warm)mm='reader';else if(d.blur&&(!mm||mm==='overlay'))mm='blur';else if(!mm||mm==='overlay'||mm==='media-only')mm='dimmer';if(!['dimmer','reader','blur'].includes(mm))mm='dimmer';d.mode=mm;store.set('dimmerCfg',d);dim.mode=mm;}localStorage.setItem('frostline_modeMigrated','1');}}catch{}})();
 (function(){try{if(!localStorage.getItem('frostline_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('frostline_fxMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('frostline_valsMigrated')){const d=store.get('dimmerCfg',null);if(d){d.vals=Object.assign({dimmer:45,reader:75,blur:50},d.vals||{});if(typeof d.intensity==='number'&&d.vals.dimmer==null)d.vals.dimmer=d.intensity;if(!d.fx||(!d.fx.dimmer&&!d.fx.reader&&!d.fx.blur))d.fx={dimmer:1};if(!['dimmer','reader','blur'].includes(d.edit))d.edit='dimmer';if(d.scope!=='media')d.scope='page';store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('frostline_valsMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_valsMigrated')){const d=store.get('dimmerCfg',null);if(d){d.vals=Object.assign({dimmer:0,reader:0,blur:0},d.vals||{});if(!d.fx||(!d.fx.dimmer&&!d.fx.reader&&!d.fx.blur))d.fx={dimmer:1};if(!['dimmer','reader','blur'].includes(d.edit))d.edit='dimmer';if(d.scope!=='media')d.scope='page';store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('frostline_valsMigrated','1');}}catch{}})();
 (function(){try{if(!localStorage.getItem('frostline_scopesMigrated')){const d=store.get('dimmerCfg',null);if(d){const leg=d.scope;d.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},d.scopes||{});if(leg==='media'){if(!d.scopes.dimmer||d.scopes.dimmer==='page'){/* keep page default */} ['dimmer','blur'].forEach(k=>{if(d.scopes[k]==='page'&&leg==='media')d.scopes[k]='media';});d.scopes.reader='page';}delete d.scope;store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('frostline_scopesMigrated','1');}}catch{}})();
 let dimSites=store.get('dimmerSites',{});
 function saveDim(){store.set('dimmerCfg',dim);store.set('dimmerSites',dimSites);try{chrome.storage.local.set({frostline_dimmerCfg:dim});chrome.runtime.sendMessage({cmd:'dim-apply'});}catch{}}

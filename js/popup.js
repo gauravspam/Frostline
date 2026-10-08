@@ -3,11 +3,11 @@ const store = {
   get: (k, d) => { try { const v = localStorage.getItem('frostline_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem('frostline_' + k, JSON.stringify(v)); } catch {} },
 };
-let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 45, reader: 75, blur: 50 }, edit: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
+let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 0, reader: 0, blur: 50 }, edit: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
 function dimEnsureShapeP(){
   dim.fx = dim.fx || {};
   // Fill in MISSING values only; a stored 0 is a deliberate choice and is kept.
-  const DEF = { dimmer: 45, reader: 75, blur: 50 };
+  const DEF = { dimmer: 0, reader: 0, blur: 0 };
   dim.vals = Object.assign({}, DEF, dim.vals || {});
   for (const k of ['dimmer', 'reader', 'blur']) {
     const v = dim.vals[k];
