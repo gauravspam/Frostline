@@ -15,6 +15,19 @@ repos:
     hooks:
       - id: gitleaks
 
+  # Semgrep - SAST across 30+ languages (CodeQL replacement)
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.104.0
+    hooks:
+      - id: semgrep
+        args: ['--config=auto', '--error']
+
+  # Lint GitHub workflows locally
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
+    hooks:
+      - id: actionlint
+
   # Pre-commit basics
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
