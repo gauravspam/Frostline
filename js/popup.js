@@ -75,23 +75,28 @@ document.querySelector('#pp-intensity').oninput = e => {
 // carry over the currently shown scope. Otherwise dimCss keeps painting the
 // previous effect, which is why Reader showed a black screen and why the
 // scope buttons appeared to apply to the wrong mode.
+// Reader on Media is not meaningful (no sepia/saturate on media elements),
+// so force scope to 'page' when Reader is selected.
 document.querySelectorAll('#pp-mode button').forEach(b => b.onclick = () => {
   const k = b.dataset.m;
   dimEnsureShapeP();
   const cur = dim.scopes[dim.edit] || 'page';
   dim.edit = k;
   dim.mode = k;
-  dim.scopes[k] = cur;
+  // Reader on Media is not meaningful - force page scope
+  dim.scopes[k] = (k === 'reader') ? 'page' : cur;
   // Arming is driven by the value, not by the click. A mode whose value is 0 is a
   // deliberate off state, so clicking it must not switch the effect back on.
   dim.fx[k] = (+dim.vals[k] > 0) ? 1 : 0;
   saveDim();
   paint();
 });
-// Scope applies to the active mode only. Media is now valid for every mode
-// including Reader - the old denial left Reader with no reachable media path.
+// Scope applies to the active mode only. Media is not valid for Reader
+// (sepia/saturate have no effect on media elements).
 document.querySelectorAll('#pp-scope button').forEach(b => b.onclick = () => {
   dimEnsureShapeP();
+  // Prevent Reader + Media combination
+  if (dim.edit === 'reader' && b.dataset.s === 'media') return;
   dim.scopes[dim.edit || 'dimmer'] = b.dataset.s;
   saveDim();
   paint();
@@ -147,7 +152,10 @@ function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
       chrome.runtime.sendMessage({ cmd: resetCmd }, () => {
         void chrome.runtime.lastError;
         btn.classList.remove('busy');
-        try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
+        // Wait for reset to complete (includes verification delay) before checking status
+        setTimeout(() => {
+          try { chrome.runtime.sendMessage({ cmd: statusCmd }, (st) => { void chrome.runtime.lastError; show(st); }); } catch {}
+        }, 300);
       });
     } catch { btn.classList.remove('busy'); }
   };

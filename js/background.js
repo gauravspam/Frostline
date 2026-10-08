@@ -130,6 +130,8 @@ function dimCss(cfg,boost){
     // Media scope paints with element filters, so the page overlay must stay off.
     // Neutralise it explicitly rather than relying on removal by a later insert.
     css+='html.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}html.frostline-ov::before,html.frostline-ov::after{display:none!important}';
+    // Disable Shade media filters on YouTube video when Theater windowed fullscreen is active.
+    css+='html.frostline-th-wfs img,html.frostline-th-wfs video,html.frostline-th-wfs canvas,html.frostline-th-wfs picture,html.frostline-th-wfs [style*="background-image"]{filter:none!important}';
   }else{
     // Page scope paints via an overlay on the top layer. A pseudo-element on the
     // root element is unreliable where the app promotes its root into a stacking
@@ -145,6 +147,10 @@ function dimCss(cfg,boost){
     if(ba>0)layers.push('linear-gradient(rgba(0,0,0,'+ba.toFixed(3)+'),rgba(0,0,0,'+ba.toFixed(3)+'))');
     if(gate>0&&(active==='dimmer'||active==='reader'))layers.push('linear-gradient(rgba(0,0,0,'+gate.toFixed(3)+'),rgba(0,0,0,'+gate.toFixed(3)+'))');
     css+='html.frostline-ov{--frostline-ov-bg:'+(layers.length?layers.join(','):'transparent')+';--frostline-ov-blur:'+(brad||'0')+'px}';
+    // Hide Shade overlay when Theater windowed fullscreen is active to avoid
+    // z-index conflicts and unwanted dimming/blur on the video.
+    css+='html.frostline-th-wfs.frostline-ov::before{display:none!important}';
+    css+='html.frostline-th-wfs.frostline-ov{--frostline-ov-bg:transparent!important;--frostline-ov-blur:0px!important}';
     css+='html.frostline-ov::before{content:""!important;position:fixed!important;left:0!important;right:0!important;top:0!important;bottom:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;pointer-events:none!important;background:var(--frostline-ov-bg)!important;backdrop-filter:blur(var(--frostline-ov-blur))!important;-webkit-backdrop-filter:blur(var(--frostline-ov-blur))!important;margin:0!important;padding:0!important;border:0!important;transition:opacity 150ms ease,backdrop-filter 150ms ease!important}';
   }
   css+='@media print{html.frostline-ov::before,html.frostline-ov::after{display:none!important}}';
@@ -232,8 +238,9 @@ function dimMismatch(p,cfg){
   const overlay=p.ov&&(parseFloat(p.blur||'0')>0||(p.bd&&p.bd!=='none'));
   const shadeMedia=p.shadeMedia;
   if(!e.paints){
-    // Only flag if Shade-specific artifacts remain
-    return p.ov||overlay||shadeMedia;
+    // Only flag if Shade-specific artifacts remain (overlay with actual blur/bg, or media filter).
+    // The frostline-ov class alone is not a mismatch - it's needed for DIM_NEUTRAL to work.
+    return overlay||shadeMedia;
   }
   if(e.scope==='media')return !shadeMedia;
   return !overlay;
@@ -272,7 +279,11 @@ async function dimResetAll(){
       n++;
     }catch{}
   }
+  // Re-apply with current config
   await dimApplyAll();
+  // Allow time for CSS to settle, then verify
+  await new Promise(r=>setTimeout(r,150));
+  await dimVerifyAll();
   return{ok:true,reset:n};
 }
 // Frostline Theater engine (YouTube: windowed fullscreen)
@@ -369,12 +380,12 @@ function frostlineTheaterBoot(cfg){
     var inject=function(){
       try{
         var ex0=document.getElementById('frostline-th-wfs');
-        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='13'){paintB();return true;}
+        if(ex0&&ex0.isConnected&&ex0.dataset.frostlineBv==='14'){paintB();return true;}
         if(ex0){try{ex0.remove();}catch(_){}}
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='13';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='14';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
@@ -396,7 +407,7 @@ function frostlineTheaterBoot(cfg){
         var last=0;
         var ob=new MutationObserver(function(){
           var cur=document.getElementById('frostline-th-wfs');
-          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='13')return;
+          if(cur&&cur.isConnected&&cur.dataset.frostlineBv==='14')return;
           var now=Date.now();if(now-last<400)return;last=now;
           try{inject();}catch(_){}
         });
@@ -495,6 +506,8 @@ async function theaterVerifyAll(){
   try{await chrome.storage.local.set({frostline_theaterState:st});}catch{}
   return st;
 }
+// Force teardown of every tab regardless of what the worker still remembers,
+// then re-apply. This is the escape hatch when the tracked state has drifted.
 async function theaterResetAll(){
   let tabs=[];try{tabs=await chrome.tabs.query({});}catch{return{ok:false};}
   let n=0;
@@ -509,6 +522,8 @@ async function theaterResetAll(){
     }catch{}
   }
   await theaterApplyAll();
+  await new Promise(r=>setTimeout(r,150));
+  await theaterVerifyAll();
   return{ok:true,reset:n};
 }
 chrome.tabs.onActivated.addListener(async info=>{try{const id=info&&info.tabId;if(!id)return;const dc=await dimCfg();await dimApply(id,dc);let url='';try{const g=await chrome.tabs.get(id);url=g.url||'';}catch{}const tc=await theaterCfg();await theaterApply(id,tc,url);await dimVerifyAll();await theaterVerifyAll();}catch{}});

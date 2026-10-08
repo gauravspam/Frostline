@@ -22,6 +22,16 @@
       });
     } catch { if (cb) cb(); }
   };
+  function isWatchPage() {
+    try {
+      const u = new URL(location.href);
+      if (u.hostname.indexOf('youtube.com') >= 0) {
+        if (u.pathname === '/watch' || u.pathname.indexOf('/shorts/') === 0) return true;
+      }
+      if (u.hostname === 'youtu.be' && u.pathname !== '/') return true;
+    } catch {}
+    return false;
+  }
   function vidOf() {
     try {
       const u = new URL(location.href);
@@ -81,6 +91,7 @@
     } catch {}
   }
   function applyAll() {
+    if (!isWatchPage()) { cleanup(); return; }
     const de = document.documentElement;
     const wfsOn = !!(cfg.enabled && cfg.wfs);
     if (wfsOn) theaterOn(); else theaterOff();
@@ -213,7 +224,7 @@
   function inject() {
     try {
       const ex = document.getElementById('frostline-th-wfs');
-      if (ex && ex.isConnected && ex.dataset.frostlineBv === '13') { paintB(); return true; }
+      if (ex && ex.isConnected && ex.dataset.frostlineBv === '14') { paintB(); return true; }
       if (ex) { try { ex.remove(); } catch {} }
       const old = document.getElementById('frostline-th-str');
       if (old) { try { old.remove(); } catch {} }
@@ -224,7 +235,7 @@
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
-        b.dataset.frostlineBv = '13';
+        b.dataset.frostlineBv = '14';
         b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
@@ -280,7 +291,7 @@
         const cur = document.getElementById('frostline-th-wfs');
         // Also re-inject when the button survives but a stale-stamp node is
         // present, so a markup change self-heals in already-open tabs.
-        if (cur && cur.isConnected && cur.dataset.frostlineBv === '13') return;
+        if (cur && cur.isConnected && cur.dataset.frostlineBv === '14') return;
         const now = Date.now();
         if (now - last < 400) return;
         last = now;
@@ -317,7 +328,7 @@
     } catch {}
   }
   function boot() {
-    try { document.documentElement.dataset.frostlineTh = '1.4.42'; } catch {}
+    try { document.documentElement.dataset.frostlineTh = '1.4.43'; } catch {}
     store(() => {
       if (!cfg.enabled) { cleanup(); return; }
       try { applyAll(); } catch {}
@@ -335,14 +346,15 @@
       }
     });
   } catch {}
-  try { document.addEventListener('yt-navigate-finish', () => { if (cfg.enabled) { applyAll(); ensureButtons(); } }); } catch {}
+  try { document.addEventListener('yt-navigate-finish', () => { if (cfg.enabled && isWatchPage()) { applyAll(); ensureButtons(); } else cleanup(); }); } catch {}
   let lastUrl = '';
   try { lastUrl = location.href; } catch {}
   setInterval(() => {
     try {
       if (location.href !== lastUrl) {
         lastUrl = location.href;
-        if (cfg.enabled) { store(() => { if (cfg.enabled) { applyAll(); ensureButtons(); } else cleanup(); }); }
+        if (cfg.enabled) { store(() => { if (cfg.enabled && isWatchPage()) { applyAll(); ensureButtons(); } else cleanup(); }); }
+        else cleanup();
       }
     } catch {}
   }, 1500);
