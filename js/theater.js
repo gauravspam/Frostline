@@ -76,11 +76,9 @@
     } catch {}
   }
   function theaterOn() {
-    try {
-      const tb = document.querySelector('.ytp-size-button');
-      const on = document.querySelector('ytd-watch-flexy[theater]');
-      if (tb && !on && tb.click) tb.click();
-    } catch {}
+    // Windowed geometry comes from our fixed player rules alone. Clicking
+    // YouTube's own theater toggle re-lays-out its player behind our back and
+    // is not needed for the windowed frame.
   }
   function theaterOff() {
     try {

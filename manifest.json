@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Frostline — Beautiful New Tab",
-  "version": "1.4.46",
+  "version": "1.4.47",
   "description": "A beautiful new tab with floating-glass widgets, focus tools, and daily inspiration. Includes Shade and YouTube windowed fullscreen.",
   "icons": {
     "16": "assets/icon16.png",

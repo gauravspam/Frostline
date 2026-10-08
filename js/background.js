@@ -353,7 +353,9 @@ function frostlineTheaterBoot(cfg){
   try{
     var wfs=!!cfg.wfs;
     var de=document.documentElement;
-    try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}
+    // Windowed geometry comes from our fixed player rules alone. Clicking
+    // YouTube's own theater toggle re-lays-out its player behind our back and
+    // is not needed for the windowed frame.
     de.classList.toggle('frostline-th-wfs',wfs);
     de.classList.add('frostline-th');
     var exitTh=function(){try{var fx=document.querySelector('ytd-watch-flexy');var on=document.querySelector('ytd-watch-flexy[theater]')||(fx&&fx.hasAttribute('theater'));if(!on)return;var cands=[document.querySelector('.ytp-size-button'),document.querySelector('button.ytp-size-button')].filter(Boolean);for(var ci=0;ci<cands.length;ci++){try{cands[ci].click();}catch(_){}}if(fx&&fx.hasAttribute('theater')){try{fx.removeAttribute('theater');}catch(_){}}}catch(_){}};
@@ -416,7 +418,7 @@ function frostlineTheaterBoot(cfg){
         var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='16';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
-        bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;try{var tb=document.querySelector('.ytp-size-button');var th2=document.querySelector('ytd-watch-flexy[theater]');if(wfs&&tb&&!th2&&tb.click)tb.click();}catch(_){}de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
+        bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
         try{bw.addEventListener('mouseenter',function(){tipShow(bw);});bw.addEventListener('mouseleave',tipHide);}catch(_){}
         var anchor=bar.querySelector('.ytp-settings-button');
         var host=anchor?anchor.parentNode:bar;
