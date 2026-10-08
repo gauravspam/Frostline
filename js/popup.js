@@ -1,16 +1,16 @@
 // Frostline toolbar popup: quick Shade + Theater control (same storage as the newtab page)
 const store = {
-  get: (k, d) => { try { const v = localStorage.getItem('aurora_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
-  set: (k, v) => { try { localStorage.setItem('aurora_' + k, JSON.stringify(v)); } catch {} },
+  get: (k, d) => { try { const v = localStorage.getItem('frostline_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set: (k, v) => { try { localStorage.setItem('frostline_' + k, JSON.stringify(v)); } catch {} },
 };
 let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 45, reader: 75, blur: 50 }, edit: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
 function dimEnsureShapeP(){ dim.fx = dim.fx || {}; dim.vals = Object.assign({ dimmer: 45, reader: 75, blur: 50 }, dim.vals || {}); if (!['dimmer','reader','blur'].includes(dim.edit)) dim.edit = 'dimmer'; dim.scopes = Object.assign({ dimmer: 'page', reader: 'page', blur: 'page' }, dim.scopes || {}); }
-(function(){try{if(!localStorage.getItem('aurora_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('aurora_fxMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('aurora_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));store.set('dimmerCfg',d);dim.intensity=d.intensity;}localStorage.setItem('aurora_dimMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('frostline_fxMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));store.set('dimmerCfg',d);dim.intensity=d.intensity;}localStorage.setItem('frostline_dimMigrated','1');}}catch{}})();
 let pushT = null;
 function saveDim() {
   store.set('dimmerCfg', dim);
-  try { chrome.storage.local.set({ aurora_dimmerCfg: dim }); } catch {}
+  try { chrome.storage.local.set({ frostline_dimmerCfg: dim }); } catch {}
   clearTimeout(pushT);
   pushT = setTimeout(() => { try { chrome.runtime.sendMessage({ cmd: 'dim-apply' }, () => { void chrome.runtime.lastError; }); } catch {} }, 150);
 }
@@ -32,12 +32,12 @@ document.querySelectorAll('#pp-scope button').forEach(b => b.onclick = () => { d
 
 try {
   chrome.storage.onChanged.addListener((ch, area) => {
-    if (area === 'local' && ch.aurora_dimmerCfg && ch.aurora_dimmerCfg.newValue) {
-      dim = Object.assign(dim, ch.aurora_dimmerCfg.newValue);
+    if (area === 'local' && ch.frostline_dimmerCfg && ch.frostline_dimmerCfg.newValue) {
+      dim = Object.assign(dim, ch.frostline_dimmerCfg.newValue);
       paint();
     }
-    if (area === 'local' && ch.aurora_ytCfg && ch.aurora_ytCfg.newValue) {
-      th = Object.assign(th, ch.aurora_ytCfg.newValue);
+    if (area === 'local' && ch.frostline_ytCfg && ch.frostline_ytCfg.newValue) {
+      th = Object.assign(th, ch.frostline_ytCfg.newValue);
       paintTheater();
     }
   });
@@ -53,7 +53,7 @@ function saveTh() {
   const clean = { enabled: th.enabled ? 1 : 0, wfs: th.wfs ? 1 : 0, remember: th.remember ? 1 : 0, shortcut: th.shortcut ? 1 : 0 };
   th = clean;
   store.set('ytCfg', clean);
-  try { chrome.storage.local.set({ aurora_ytCfg: clean }); } catch {}
+  try { chrome.storage.local.set({ frostline_ytCfg: clean }); } catch {}
   clearTimeout(pushTh);
   pushTh = setTimeout(() => { try { chrome.runtime.sendMessage({ cmd: 'theater-apply' }, () => { void chrome.runtime.lastError; }); } catch {} }, 150);
 }

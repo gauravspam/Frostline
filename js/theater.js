@@ -2,17 +2,17 @@
 // Runs on every YT load automatically (manifest content_scripts). Layout CSS
 // comes from the worker via insertCSS (page CSP blocks inline <style>).
 (function () {
-  if (window.__auroraThCS) return;
-  window.__auroraThCS = 1;
+  if (window.__frostlineThCS) return;
+  window.__frostlineThCS = 1;
   const DEF = { enabled: 0, wfs: 1, remember: 1, shortcut: 1 };
   let cfg = Object.assign({}, DEF);
   const store = (cb) => {
     try {
-      chrome.storage.local.get(['aurora_ytCfg', 'aurora_theaterMem'], (o) => {
+      chrome.storage.local.get(['frostline_ytCfg', 'frostline_theaterMem'], (o) => {
         try {
-          const c = Object.assign({}, DEF, ((o && o.aurora_ytCfg) || {}));
+          const c = Object.assign({}, DEF, ((o && o.frostline_ytCfg) || {}));
           const vid = vidOf();
-          const mem = (o && o.aurora_theaterMem) || {};
+          const mem = (o && o.frostline_theaterMem) || {};
           if (c.remember && vid && mem[vid]) {
             c.wfs = mem[vid].wfs ? 1 : 0;
           }
@@ -37,9 +37,9 @@
     const vid = vidOf();
     const refresh = () => { try { chrome.runtime.sendMessage({ cmd: 'theater-apply' }, () => { void chrome.runtime.lastError; }); } catch {} };
     try {
-      chrome.storage.local.get('aurora_ytCfg', (o) => {
+      chrome.storage.local.get('frostline_ytCfg', (o) => {
         try {
-          const cur = (o && o.aurora_ytCfg) || {};
+          const cur = (o && o.frostline_ytCfg) || {};
           const c = {
             enabled: 1,
             wfs: cur.wfs ? 1 : 0,
@@ -47,14 +47,14 @@
             shortcut: (cur.shortcut === 0 ? 0 : 1)
           };
           Object.keys(patch || {}).forEach((k) => { c[k] = patch[k]; });
-          chrome.storage.local.set({ aurora_ytCfg: c }, () => {
+          chrome.storage.local.set({ frostline_ytCfg: c }, () => {
             cfg = Object.assign({}, cfg, c);
             if (vid && c.remember) {
-              chrome.storage.local.get('aurora_theaterMem', (m) => {
+              chrome.storage.local.get('frostline_theaterMem', (m) => {
                 try {
-                  const mem = ((m && m.aurora_theaterMem) || {});
+                  const mem = ((m && m.frostline_theaterMem) || {});
                   mem[vid] = { wfs: c.wfs ? 1 : 0 };
-                  chrome.storage.local.set({ aurora_theaterMem: mem }, refresh);
+                  chrome.storage.local.set({ frostline_theaterMem: mem }, refresh);
                 } catch { refresh(); }
               });
             } else refresh();
@@ -213,7 +213,7 @@
   function inject() {
     try {
       const ex = document.getElementById('frostline-th-wfs');
-      if (ex && ex.isConnected && ex.dataset.auroraBv === '6') { paintB(); return true; }
+      if (ex && ex.isConnected && ex.dataset.frostlineBv === '6') { paintB(); return true; }
       if (ex) { try { ex.remove(); } catch {} }
       const old = document.getElementById('frostline-th-str');
       if (old) { try { old.remove(); } catch {} }
@@ -224,7 +224,7 @@
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
-        b.dataset.auroraBv = '6';
+        b.dataset.frostlineBv = '6';
         b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
@@ -261,18 +261,18 @@
   function ensureButtons() {
     watchPlayer();
     if (inject()) return;
-    if (window.__auroraThBtnIv) return;
+    if (window.__frostlineThBtnIv) return;
     waitPlayer(() => { try { inject(); } catch {} });
     try {
-      window.__auroraThBtnIv = setInterval(() => {
-        if (inject()) { try { clearInterval(window.__auroraThBtnIv); } catch {} window.__auroraThBtnIv = 0; }
+      window.__frostlineThBtnIv = setInterval(() => {
+        if (inject()) { try { clearInterval(window.__frostlineThBtnIv); } catch {} window.__frostlineThBtnIv = 0; }
       }, 1000);
     } catch {}
   }
   // YouTube rebuilds player controls on theater/quality changes, destroying
-  // injected buttons. Watch persistently and re-inject (throttled), Suite-style.
+  // injected buttons. Watch persistently and re-inject (throttled).
   function watchPlayer() {
-    if (window.__auroraThObs) return;
+    if (window.__frostlineThObs) return;
     try {
       let last = 0;
       const ob = new MutationObserver(() => {
@@ -284,7 +284,7 @@
         last = now;
         inject();
       });
-      window.__auroraThObs = ob;
+      window.__frostlineThObs = ob;
       ob.observe(document.body, { childList: true, subtree: true });
     } catch {}
   }
@@ -298,11 +298,11 @@
   }
   function maybeHint() {
     try {
-      chrome.storage.local.get('aurora_thHint', (o) => {
+      chrome.storage.local.get('frostline_thHint', (o) => {
         try {
-          if (o && o.aurora_thHint) return;
+          if (o && o.frostline_thHint) return;
           if (!cfg.enabled || !cfg.shortcut) return;
-          try { chrome.storage.local.set({ aurora_thHint: 1 }); } catch {}
+          try { chrome.storage.local.set({ frostline_thHint: 1 }); } catch {}
           const t = document.createElement('div');
           t.className = 'frostline-th-hint';
           t.textContent = 'Press ` to toggle Theater · Esc to exit';
@@ -315,7 +315,7 @@
     } catch {}
   }
   function boot() {
-    try { document.documentElement.dataset.auroraTh = '1.4.35'; } catch {}
+    try { document.documentElement.dataset.frostlineTh = '1.4.35'; } catch {}
     store(() => {
       if (!cfg.enabled) { cleanup(); return; }
       try { applyAll(); } catch {}
@@ -326,8 +326,8 @@
   }
   try {
     chrome.storage.onChanged.addListener((ch, area) => {
-      if (area === 'local' && ch.aurora_ytCfg && ch.aurora_ytCfg.newValue) {
-        cfg = Object.assign({}, cfg, ch.aurora_ytCfg.newValue);
+      if (area === 'local' && ch.frostline_ytCfg && ch.frostline_ytCfg.newValue) {
+        cfg = Object.assign({}, cfg, ch.frostline_ytCfg.newValue);
         if (cfg.enabled) { applyAll(); ensureButtons(); }
         else cleanup();
       }

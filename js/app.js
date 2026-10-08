@@ -1,8 +1,8 @@
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const store={get:(k,d)=>{try{const v=localStorage.getItem('aurora_'+k);return v?JSON.parse(v):d}catch{return d}},set:(k,v)=>localStorage.setItem('aurora_'+k,JSON.stringify(v))};
+const store={get:(k,d)=>{try{const v=localStorage.getItem('frostline_'+k);return v?JSON.parse(v):d}catch{return d}},set:(k,v)=>localStorage.setItem('frostline_'+k,JSON.stringify(v))};
 // ── Fresh-install defaults (applied ONCE; existing installs untouched) ──
 async function seedFreshDefaults(){try{
-const S=(k,v)=>localStorage.setItem('aurora_'+k,JSON.stringify(v));
+const S=(k,v)=>localStorage.setItem('frostline_'+k,JSON.stringify(v));
 S('bg','unsplash');S('refresh','tab');
 S('clock','rectangle');S('clockSize',130);S('timeFormat','12h');
 S('vis',{date:1,weather:1,tasks:1,pomodoro:1,github:1,world:1,notes:1,news:1,dock:1,ai:1,quote:1,search:1});
@@ -14,14 +14,14 @@ const DIM1={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:
 const YT1={enabled:1,wfs:1,remember:1,shortcut:1};
 S('discardCfg',DISC1);S('dimmerCfg',DIM1);S('ytCfg',YT1);
 S('onb',0);
-try{if(chrome&&chrome.storage&&chrome.storage.local)await chrome.storage.local.set({aurora_discardCfg:DISC1,aurora_dimmerCfg:DIM1,aurora_ytCfg:YT1});}catch{}
-try{localStorage.setItem('aurora_defaultsV','1');}catch{}
+try{if(chrome&&chrome.storage&&chrome.storage.local)await chrome.storage.local.set({frostline_discardCfg:DISC1,frostline_dimmerCfg:DIM1,frostline_ytCfg:YT1});}catch{}
+try{localStorage.setItem('frostline_defaultsV','1');}catch{}
 }catch{}}
 try{
-if(!localStorage.getItem('aurora_defaultsV')){
+if(!localStorage.getItem('frostline_defaultsV')){
 let hasReal=false;
-for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||k.indexOf('aurora_')!==0)continue;if(k==='aurora_defaultsV'||k==='aurora_onb')continue;if(/Migrated$/.test(k))continue;hasReal=true;break;}
-if(!hasReal)seedFreshDefaults();else{try{localStorage.setItem('aurora_defaultsV','1');}catch{}}
+for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||k.indexOf('frostline_')!==0)continue;if(k==='frostline_defaultsV'||k==='frostline_onb')continue;if(/Migrated$/.test(k))continue;hasReal=true;break;}
+if(!hasReal)seedFreshDefaults();else{try{localStorage.setItem('frostline_defaultsV','1');}catch{}}
 }
 }catch{}
 
@@ -56,7 +56,7 @@ function tick(){
 setInterval(tick,1000);tick();
 (function(){const an=$('#analog');if(!an||an.dataset.ticks)return;an.dataset.ticks='1';for(let i=0;i<12;i++){const q=i%3===0;const d=document.createElement('div');d.className='tick';const s=q?3:2;d.style.width=d.style.height=s+'px';d.style.background=q?'rgba(255,255,255,.85)':'rgba(255,255,255,.35)';d.style.transform=`translate(-50%,-50%) rotate(${i*30}deg) translateY(-88px)`;an.appendChild(d);}})();
 
-// Quotes (Suite categories, day-of-year rotation)
+// Quotes (categories, day-of-year rotation)
 const QUOTES=[["Success comes from having dreams that are bigger than your fears.","BOBBY UNSER"],["The best way out is always through.","ROBERT FROST"],["What we think, we become.","BUDDHA"],["Simplicity is the ultimate sophistication.","LEONARDO DA VINCI"],["Whether you think you can or you think you can't, you're right.","HENRY FORD"],["The only way to do great work is to love what you do.","STEVE JOBS"],["In the middle of difficulty lies opportunity.","ALBERT EINSTEIN"],["It always seems impossible until it's done.","NELSON MANDELA"]];
 const QUOTE_CATS={General:QUOTES,Motivation:[QUOTES[0],QUOTES[4],QUOTES[5],QUOTES[7]],Stoicism:[["The impediment to action advances action.","MARCUS AURELIUS"],["We suffer more in imagination than in reality.","SENECA"],["It's not what happens to you, but how you react.","EPICTETUS"],["Waste no more time arguing what a good man should be. Be one.","MARCUS AURELIUS"]],'Bhagavad Gita':[["You have a right to your actions, but never to the fruits of action.","BHAGAVAD GITA"],["The mind is restless and difficult to restrain, but it is subdued by practice.","BHAGAVAD GITA"],["Success comes from having dreams that are bigger than your fears.","BOBBY UNSER"]],Buddhism:[["Peace comes from within. Do not seek it without.","BUDDHA"],["What we think, we become.","BUDDHA"],["Happiness is not something ready made. It comes from your own actions.","DALAI LAMA"]]};
 function applyQuote(){const pool=[];Object.values(QUOTE_CATS).forEach(a=>a.forEach(q=>{if(!pool.some(p=>p[0]===q[0]))pool.push(q);}));const q=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];$('#quote').textContent=`"${q[0]}"`;$('#quote-author').textContent='— '+q[1];}
@@ -71,7 +71,7 @@ $$('.widget').forEach(w=>w.onclick=()=>openModal(w.dataset.modal));
 $$('.m-close').forEach(b=>b.onclick=closeAll);overlay.onclick=closeAll;
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(typeof taskEdit!=='undefined'&&taskEdit){taskEdit=null;renderTasks();return;}closeAll();hideCsel();const cpd=$('#clock-presets');if(cpd)cpd.classList.remove('open');}});
 
-// Tasks (Suite-compatible {id,text,completed})
+// Tasks ({id,text,completed})
 let tasks=store.get('tasks',[{t:'Read',d:false},{t:'Order',d:false}]);
 tasks=tasks.map(t=>({id:String(t.id||(Date.now()+Math.random())),text:t.text??t.t??'',completed:!!(t.completed??t.d),createdAt:t.createdAt||Date.now()}));
 let taskEdit=null;
@@ -84,7 +84,7 @@ renderTasks();
 // Simple timer (single session, H/M/S steppers, default 5:00)
 let tm={left:store.get('pomoLeft',300),base:store.get('pomoBase',300),running:false,timer:null,endAt:0};
 function pomoLeftNow(){return tm.running&&tm.endAt?Math.max(0,Math.ceil((tm.endAt-Date.now())/1000)):tm.left;}
-function pomoWrite(){const p={base:tm.base,running:!!tm.running,endAt:tm.running&&tm.endAt?tm.endAt:0,left:pomoLeftNow()};store.set('pomo',p);store.set('pomoLeft',p.left);store.set('pomoBase',p.base);try{chrome.storage.local.set({aurora_pomo:p});}catch{}}
+function pomoWrite(){const p={base:tm.base,running:!!tm.running,endAt:tm.running&&tm.endAt?tm.endAt:0,left:pomoLeftNow()};store.set('pomo',p);store.set('pomoLeft',p.left);store.set('pomoBase',p.base);try{chrome.storage.local.set({frostline_pomo:p});}catch{}}
 function fmtHMS(s){s=Math.max(0,Math.round(s));const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;const mm=String(m).padStart(h?2:2,'0'),qq=String(ss).padStart(2,'0');return h?`${h}:${mm}:${qq}`:`${String(m).padStart(2,'0')}:${qq}`;}
 function pomBeep(){try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const C=new AC();try{if(C.state==='suspended')C.resume();}catch{}[660,660,880].forEach((f,i)=>{const o=C.createOscillator(),g=C.createGain();o.connect(g);g.connect(C.destination);o.frequency.value=f;const t=C.currentTime+i*0.25;g.gain.setValueAtTime(0.15,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.2);o.start(t);o.stop(t+0.2);});setTimeout(()=>C.close(),1200);}catch{}}
 function drawTm(){const h=Math.floor(tm.left/3600),m=Math.floor(tm.left%3600/60),s=tm.left%60;$('#t-time').textContent=fmtHMS(tm.left);$('#t-fill').style.width=(tm.base?tm.left/tm.base*100:0)+'%';$('#t-play').textContent=tm.running?'⏸':'▶';$('#t-h').textContent=h;$('#t-m').textContent=m;$('#t-s').textContent=s;$('#w-focus').textContent=tm.running?'Focusing… '+fmtHMS(tm.left):(tm.left>0&&tm.left!==tm.base?'Paused':'Ready to focus?');}
@@ -104,11 +104,11 @@ $('#t-plus5').onpointerdown=()=>{clearTimeout(tHoldT);tHoldT=setTimeout(()=>{tSi
 syncTSign();
 $$('.t-stepbtn').forEach(b=>b.onclick=()=>stepTm(b.dataset.u,+b.dataset.d));
 try{chrome.runtime.onMessage.addListener((m)=>{if(m&&m.cmd==='pomo-beep'){try{pomBeep();}catch{}}});}catch{}
-try{chrome.storage.onChanged.addListener((ch,area)=>{if(area!=='local'||!ch.aurora_pomo)return;const p=ch.aurora_pomo.newValue;if(!p)return;tm.base=+p.base||tm.base;if(p.running&&p.endAt){tm.running=true;tm.endAt=+p.endAt;tm.left=Math.max(0,Math.ceil((tm.endAt-Date.now())/1000));if(!tm.timer){tm.timer=setInterval(()=>{tm.left=pomoLeftNow();if(tm.left<=0){pomoComplete();return;}store.set('pomoLeft',tm.left);drawTm();},250);}}else{clearInterval(tm.timer);tm.timer=null;tm.running=false;tm.left=+(p.left||0);tm.endAt=0;}drawTm();});}catch{}
-try{chrome.storage.local.get('aurora_pomo',(o)=>{try{const p=o&&o.aurora_pomo;if(!p)return;tm.base=+p.base||tm.base;if(p.running&&+p.endAt&&+p.endAt>Date.now()){tm.running=true;tm.endAt=+p.endAt;tm.left=Math.max(0,Math.ceil((tm.endAt-Date.now())/1000));tm.timer=setInterval(()=>{tm.left=pomoLeftNow();if(tm.left<=0){pomoComplete();return;}store.set('pomoLeft',tm.left);drawTm();},250);}drawTm();}catch{}});}catch{}
+try{chrome.storage.onChanged.addListener((ch,area)=>{if(area!=='local'||!ch.frostline_pomo)return;const p=ch.frostline_pomo.newValue;if(!p)return;tm.base=+p.base||tm.base;if(p.running&&p.endAt){tm.running=true;tm.endAt=+p.endAt;tm.left=Math.max(0,Math.ceil((tm.endAt-Date.now())/1000));if(!tm.timer){tm.timer=setInterval(()=>{tm.left=pomoLeftNow();if(tm.left<=0){pomoComplete();return;}store.set('pomoLeft',tm.left);drawTm();},250);}}else{clearInterval(tm.timer);tm.timer=null;tm.running=false;tm.left=+(p.left||0);tm.endAt=0;}drawTm();});}catch{}
+try{chrome.storage.local.get('frostline_pomo',(o)=>{try{const p=o&&o.frostline_pomo;if(!p)return;tm.base=+p.base||tm.base;if(p.running&&+p.endAt&&+p.endAt>Date.now()){tm.running=true;tm.endAt=+p.endAt;tm.left=Math.max(0,Math.ceil((tm.endAt-Date.now())/1000));tm.timer=setInterval(()=>{tm.left=pomoLeftNow();if(tm.left<=0){pomoComplete();return;}store.set('pomoLeft',tm.left);drawTm();},250);}drawTm();}catch{}});}catch{}
 drawTm();
 
-// GitHub live (Suite: public events, compare-enriched pushes, 12-week heatmap)
+// GitHub live (public events, compare-enriched pushes, 12-week heatmap)
 let ghUser=store.get('gh','gauravspam');
 const ghCompareCache=new Map();
 function ghBranch(ref){return (ref||'').replace(/^refs\/heads\//,'')||'main';}
@@ -165,7 +165,7 @@ const FS=9,GAP=13,TOP=12,BOT=150;const allLy=[CY+DD+29];
 function applyGhShow(){const s=Object.assign({stats:1,lang:1,commits:1,readme:1},store.get('ghShow',{}));const show=(id,on)=>{const e=$('#'+id);if(e)e.style.display=on?'':'none';};show('gh-statsrow',s.stats);['gh-langbar','gh-langlist','gh-cap'].forEach(id=>show(id,s.lang));['gh-commlabel','gh-commits'].forEach(id=>show(id,s.commits));show('gh-notif-sec',s.readme);}
 renderGhToggles();applyGhShow();
 
-// Weather (Suite: search, °C/°F, hourly, sun arc, 5-day)
+// Weather (search, °C/°F, hourly, sun arc, 5-day)
 const WX_KNOWN={mumbai:[19.07,72.87],thane:[19.2,72.97],delhi:[28.61,77.23],'new delhi':[28.61,77.23],bangalore:[12.97,77.59],bengaluru:[12.97,77.59],chennai:[13.08,80.27],kolkata:[22.57,88.36],hyderabad:[17.38,78.48],pune:[18.52,73.85],london:[51.5,-0.12],paris:[48.85,2.35],'new york':[40.71,-74.0],tokyo:[35.68,139.69],singapore:[1.35,103.82],dubai:[25.2,55.27],sydney:[-33.87,151.21]};
 let wx=Object.assign({city:'Thane',unit:'c',mode:'city'},store.get('weather',{}));
 function wxGeo(){return new Promise((res,rej)=>{if(!navigator.geolocation)return rej(new Error('no geo'));const t=setTimeout(()=>rej(new Error('timeout')),8000);navigator.geolocation.getCurrentPosition(p=>{clearTimeout(t);res(p);},e=>{clearTimeout(t);rej(e);});});}
@@ -223,7 +223,7 @@ wxSyncSettings();
 function paintUnits(){cselBuild('units-btn',[{value:'c',label:'°C'},{value:'f',label:'°F'}],wx.unit||'c',v=>{wx.unit=v;store.set('weather',wx);paintUnits();wxSync();loadWeather();});}
 paintUnits();
 
-// World clock (Suite: presets search, UTC offsets, mini dials)
+// World clock (preset search, UTC offsets, mini dials)
 const CLOCK_PRESETS=[['New York','America/New_York'],['Chicago','America/Chicago'],['Denver','America/Denver'],['Los Angeles','America/Los_Angeles'],['Anchorage','America/Anchorage'],['Honolulu','Pacific/Honolulu'],['Toronto','America/Toronto'],['Vancouver','America/Vancouver'],['Mexico City','America/Mexico_City'],['São Paulo','America/Sao_Paulo'],['Buenos Aires','America/Argentina/Buenos_Aires'],['Bogota','America/Bogota'],['Lima','America/Lima'],['Santiago','America/Santiago'],['Caracas','America/Caracas'],['Havana','America/Havana'],['Kingston','America/Jamaica'],['San Juan','America/Puerto_Rico'],['Halifax','America/Halifax'],['Winnipeg','America/Winnipeg'],['Edmonton','America/Edmonton'],['Phoenix','America/Phoenix'],['Guatemala','America/Guatemala'],['Managua','America/Managua'],['San Salvador','America/El_Salvador'],['Tegucigalpa','America/Tegucigalpa'],['Panama','America/Panama'],['Quito','America/Guayaquil'],['La Paz','America/La_Paz'],['Montevideo','America/Montevideo'],['Asuncion','America/Asuncion'],['Santo Domingo','America/Santo_Domingo'],['San Jose','America/Costa_Rica'],['Nassau','America/Nassau'],['Port of Spain','America/Port_of_Spain'],["St. John's",'America/St_Johns'],['London','Europe/London'],['Paris','Europe/Paris'],['Berlin','Europe/Berlin'],['Rome','Europe/Rome'],['Madrid','Europe/Madrid'],['Moscow','Europe/Moscow'],['Kyiv','Europe/Kyiv'],['Warsaw','Europe/Warsaw'],['Stockholm','Europe/Stockholm'],['Oslo','Europe/Oslo'],['Copenhagen','Europe/Copenhagen'],['Helsinki','Europe/Helsinki'],['Athens','Europe/Athens'],['Istanbul','Europe/Istanbul'],['Lisbon','Europe/Lisbon'],['Dublin','Europe/Dublin'],['Amsterdam','Europe/Amsterdam'],['Brussels','Europe/Brussels'],['Vienna','Europe/Vienna'],['Prague','Europe/Prague'],['Zurich','Europe/Zurich'],['Budapest','Europe/Budapest'],['Belgrade','Europe/Belgrade'],['Bucharest','Europe/Bucharest'],['Sofia','Europe/Sofia'],['Minsk','Europe/Minsk'],['Tallinn','Europe/Tallinn'],['Riga','Europe/Riga'],['Vilnius','Europe/Vilnius'],['Reykjavik','Atlantic/Reykjavik'],['Cairo','Africa/Cairo'],['Lagos','Africa/Lagos'],['Nairobi','Africa/Nairobi'],['Johannesburg','Africa/Johannesburg'],['Casablanca','Africa/Casablanca'],['Algiers','Africa/Algiers'],['Accra','Africa/Accra'],['Addis Ababa','Africa/Addis_Ababa'],['Dar es Salaam','Africa/Dar_es_Salaam'],['Khartoum','Africa/Khartoum'],['Kinshasa','Africa/Kinshasa'],['Dakar','Africa/Dakar'],['Harare','Africa/Harare'],['Tunis','Africa/Tunis'],['Dubai','Asia/Dubai'],['Mumbai','Asia/Kolkata'],['Karachi','Asia/Karachi'],['Dhaka','Asia/Dhaka'],['Bangkok','Asia/Bangkok'],['Jakarta','Asia/Jakarta'],['Singapore','Asia/Singapore'],['Hong Kong','Asia/Hong_Kong'],['Beijing','Asia/Shanghai'],['Tokyo','Asia/Tokyo'],['Seoul','Asia/Seoul'],['Taipei','Asia/Taipei'],['Manila','Asia/Manila'],['Kuala Lumpur','Asia/Kuala_Lumpur'],['Tehran','Asia/Tehran'],['Baghdad','Asia/Baghdad'],['Riyadh','Asia/Riyadh'],['Doha','Asia/Qatar'],['Kuwait City','Asia/Kuwait'],['Amman','Asia/Amman'],['Beirut','Asia/Beirut'],['Jerusalem','Asia/Jerusalem'],['Colombo','Asia/Colombo'],['Kathmandu','Asia/Kathmandu'],['Almaty','Asia/Almaty'],['Tashkent','Asia/Tashkent'],['Baku','Asia/Baku'],['Tbilisi','Asia/Tbilisi'],['Yerevan','Asia/Yerevan'],['Ulaanbaatar','Asia/Ulaanbaatar'],['Yangon','Asia/Yangon'],['Male','Asia/Male'],['Thimphu','Asia/Thimphu'],['Kabul','Asia/Kabul'],['Sydney','Australia/Sydney'],['Melbourne','Australia/Melbourne'],['Brisbane','Australia/Brisbane'],['Perth','Australia/Perth'],['Adelaide','Australia/Adelaide'],['Darwin','Australia/Darwin'],['Auckland','Pacific/Auckland'],['Suva','Pacific/Fiji'],['Guam','Pacific/Guam'],['Port Moresby','Pacific/Port_Moresby'],['Noumea','Pacific/Noumea'],['Papeete','Pacific/Tahiti'],['Samoa','Pacific/Apia'],['Kiritimati','Pacific/Kiritimati'],['Norfolk','Pacific/Norfolk'],['Chatham','Pacific/Chatham']];
 let clocks=store.get('clocks',[]);
 clocks=clocks.map(z=>typeof z==='string'?{id:String(Date.now()+Math.random()),label:z,tz:z}:{id:String(z.id||(Date.now()+Math.random())),label:z.label||z.tz,tz:z.tz||z.timezone});
@@ -243,7 +243,7 @@ $('#clock-input').oninput=renderClockPresets;
 $('#clock-add').onclick=()=>{const v=$('#clock-input').value.trim();if(!v)return;const pre=CLOCK_PRESETS.find(([l,tz])=>l.toLowerCase()===v.toLowerCase()||tz.toLowerCase()===v.toLowerCase());try{new Intl.DateTimeFormat('en',{timeZone:pre?pre[1]:v});}catch{return;}clocks.push({id:`${pre?pre[1]:v}-${Date.now()}`,label:pre?pre[0]:v,tz:pre?pre[1]:v});store.set('clocks',clocks);$('#clock-input').value='';renderClocks();};
 renderClocks();
 
-// Notes (Suite: pin, search, edit, Ctrl+Enter)
+// Notes (pin, search, edit, Ctrl+Enter)
 let notes=store.get('notes',[]);
 let noteEdit=null,noteQ='';
 function startNoteEdit(id){const x=notes.find(v=>v.id===id);if(!x)return;noteEdit=id;$('#notes-input').value=x.body;$('#notes-cancel').classList.remove('hidden');noteMode='edit';syncNoteMode();$('#notes-input').focus();}
@@ -268,7 +268,7 @@ $('#notes-cancel').onclick=()=>{noteEdit=null;$('#notes-input').value='';$('#not
 $('#notes-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey))saveNote();});
 renderNotes();
 
-// Calendar (Suite: 42-cell grid, year progress, coming-up, holidays)
+// Calendar (42-cell grid, year progress, coming-up, holidays)
 let calCursor=new Date();calCursor.setDate(1);
 function calOrdinal(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
 function calIsoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const day=(t.getUTCDay()+6)%7+1;t.setUTCDate(t.getUTCDate()-day+3);const first=new Date(Date.UTC(t.getUTCFullYear(),0,4));return 1+Math.round(((t-first)/864e5-3+((first.getUTCDay()+6)%7))/7);}
@@ -298,7 +298,7 @@ $('#cal-next').onclick=()=>{calCursor.setMonth(calCursor.getMonth()+1);calSel=nu
 $('#cal-grid').onclick=e=>{const s=e.target.closest('span[data-d]');if(!s||s.classList.contains('out'))return;calSel={m:+s.dataset.mm,d:+s.dataset.d};renderCal();renderSel();};
 renderCal();
 
-// Dock (Suite: stored shortcuts, magnification, right-click edit, shortcuts modal)
+// Dock (stored shortcuts, magnification, right-click edit, shortcuts modal)
 function seedShortcuts(){return $$('#dock a.dock-btn').map((a,i)=>({id:String(Date.now()+i),name:a.dataset.name||`Link ${i+1}`,url:a.dataset.url||a.href,cls:(a.querySelector('.gicon')||{}).className?String(a.querySelector('.gicon').className).replace('gicon','').trim():''}));}
 let shortcuts=store.get('shortcuts',null);
 if(!Array.isArray(shortcuts)||!shortcuts.length){shortcuts=seedShortcuts();store.set('shortcuts',shortcuts);}
@@ -324,7 +324,7 @@ $$('#dock a.dock-btn').forEach(bindDockBtn);
 renderDock();
 
 // Settings drawer (preserve existing simple handlers, extend)
-function openDrawer(){overlay.classList.remove('hidden');$$('.modal').forEach(m=>{m.classList.add('hidden');m.classList.remove('closing');});const s=$('#settings-modal');if(s){s.classList.remove('hidden');try{chrome.storage.local.get('aurora_dimmerCfg',o=>{if(o&&o.aurora_dimmerCfg){dim=Object.assign(dim,o.aurora_dimmerCfg);renderDimmer();}});}catch{}requestAnimationFrame(()=>moveSetGlider(true));}}
+function openDrawer(){overlay.classList.remove('hidden');$$('.modal').forEach(m=>{m.classList.add('hidden');m.classList.remove('closing');});const s=$('#settings-modal');if(s){s.classList.remove('hidden');try{chrome.storage.local.get('frostline_dimmerCfg',o=>{if(o&&o.frostline_dimmerCfg){dim=Object.assign(dim,o.frostline_dimmerCfg);renderDimmer();}});}catch{}requestAnimationFrame(()=>moveSetGlider(true));}}
 const _closeAllFn = closeAll;
 function closeAllNew(){overlay.classList.add('hidden');$$('.modal').forEach(playClose);const s=$('#settings-modal');if(s)playClose(s);}
 overlay.onclick = closeAllNew; $$('.m-close').forEach(b=>b.onclick=closeAllNew);
@@ -339,7 +339,7 @@ function moveSetGlider(instant){const nav=$('#settings-modal .set-tabs');if(!nav
 $$('.set-tabs button').forEach(b=>b.onclick=()=>{$$('.set-tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.set-pane').forEach(p=>p.classList.remove('active'));const p=$('#pane-'+b.dataset.tab);if(p)p.classList.add('active');syncSettingsTitle(b.dataset.tab);flashSettingsTab();moveSetGlider();});
 window.addEventListener('resize',()=>{if(!$('#settings-modal').classList.contains('hidden'))moveSetGlider();});
 
-// Widget visibility (one-to-one with screenshots)
+// Widget visibility toggles
 const WIDGETS=[['date','Date Widget','calendar-modal'],['weather','Weather Widget','weather-modal'],['tasks','Tasks Widget','tasks-modal'],['pomodoro','Pomodoro Timer','pomodoro-modal'],['github','GitHub Widget','github-modal'],['world','World Clock','clock-modal'],['notes','Notes','notes-modal'],['news','News Widget','news-modal']];
 const EXTRAS=[['dock','Quick Access Dock'],['ai','AI Agents Button'],['quote','Daily Quote Widget'],['search','Search Bar']];
 let vis=store.get('vis',{date:1,weather:1,tasks:1,pomodoro:1,github:1,world:1,notes:1,news:1,dock:1,ai:1,quote:1,search:1});
@@ -374,14 +374,14 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeNews();});
 
 // Prefs: quote cats, engine, backup/restore
 
-$('#btn-export').onclick=async()=>{const ls={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('aurora_'))ls[k]=localStorage.getItem(k);}let cs={};try{const all=(chrome.storage&&chrome.storage.local&&(await chrome.storage.local.get(null)))||{};for(const k of Object.keys(all))if(k.startsWith('aurora_'))cs[k]=all[k];}catch{}const data={app:'Frostline',backupVersion:1,exportedAt:new Date().toISOString(),localStorage:ls,chromeStorageLocal:cs};const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='frostline-backup.json';a.click();setBackupStatus(`✓ Exported ${Object.keys(ls).length} settings + ${Object.keys(cs).length} extension storage keys.`,true);};
+$('#btn-export').onclick=async()=>{const ls={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('frostline_'))ls[k]=localStorage.getItem(k);}let cs={};try{const all=(chrome.storage&&chrome.storage.local&&(await chrome.storage.local.get(null)))||{};for(const k of Object.keys(all))if(k.startsWith('frostline_'))cs[k]=all[k];}catch{}const data={app:'Frostline',backupVersion:1,exportedAt:new Date().toISOString(),localStorage:ls,chromeStorageLocal:cs};const b=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='frostline-backup.json';a.click();setBackupStatus(`✓ Exported ${Object.keys(ls).length} settings + ${Object.keys(cs).length} extension storage keys.`,true);};
 try{const _bb=document.querySelector('.buy-btn');if(_bb)_bb.addEventListener('click',()=>{try{window.open('https://buymeacoffee.com/gauravcreates','_blank');}catch{}});}catch{}
 $('#btn-import').onclick=()=>$('#file-import').click();
 $('#file-import').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const j=JSON.parse(r.result);let ls={},cs=null;if(j&&typeof j==='object'&&j.localStorage&&typeof j.localStorage==='object'){ls=j.localStorage;if(j.chromeStorageLocal&&typeof j.chromeStorageLocal==='object')cs=j.chromeStorageLocal;}else{for(const k of Object.keys(j||{})){if(typeof k==='string')ls[k]=j[k];}}let n=0;for(const [k,v] of Object.entries(ls)){try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));n++;}catch{}}if(cs&&chrome&&chrome.storage&&chrome.storage.local){try{await chrome.storage.local.set(cs);n+=Object.keys(cs).length;}catch{}}setBackupStatus(`✓ Imported ${n} settings. Reload to apply.`,true);}catch{setBackupStatus('✕ Import failed — invalid file.',false);}};r.readAsText(f);};
 
 $('#set-name').value=store.get('name','');
 $('#set-name').onchange=e=>{store.set('name',e.target.value);tick();};
-// Background: Unsplash API + Upload/Color/Video (matches screenshot)
+// Background: Unsplash API + Upload/Color/Video
 // Keyless wallpaper rotation (no API key needed; generic Unsplash credit)
 const KEYLESS_BG=['photo-1506905925346-21bda4d32df4','photo-1470071459604-3b5ec3a7fe05','photo-1447752875215-b2761acb3c5d','photo-1472214103451-9374bd1c798e','photo-1501785888041-af3ef285b470','photo-1476514525535-07fb3b4ae5f1','photo-1500530855697-b586d89ba3ee','photo-1519681393784-d120267933ba','photo-1493246507139-91e8fad9978e','photo-1477414348463-c0eb7f1359b6'].map(id=>`https://images.unsplash.com/${id}?q=80&w=1920&auto=format&fit=crop`);
 function keylessPhoto(){const iv=store.get('refresh','day');let i;if(iv==='hour')i=Math.floor(Date.now()/36e5);else if(iv==='six')i=Math.floor(Date.now()/216e5);else if(iv==='week')i=Math.floor(Date.now()/6048e5);else if(iv==='tab'||iv==='always')i=Math.floor(Math.random()*1e9);else if(iv==='never'){const c=store.get('bgCache',null);if(c&&c.url)return{url:c.url,credit:c.credit};i=0;}else{const n=new Date();i=Math.floor((n-new Date(n.getFullYear(),0,0))/864e5);}return{url:KEYLESS_BG[i%KEYLESS_BG.length],credit:'Photo on <b>Unsplash</b>'};}
@@ -429,7 +429,7 @@ function applyBgSolid(v){store.set('bg','solid');$('#bg-layer').style.background
 (function(){const w=$('#bg-swatches');if(w){w.innerHTML='';BG_SWATCHES.forEach(v=>{const b=document.createElement('button');b.className='bgsw';b.title=v;b.style.background=v;b.onclick=()=>applyBgSolid(v);w.appendChild(b);});}const pk=$('#set-color-pick');if(pk)pk.oninput=e=>applyBgSolid(e.target.value);})();
 function flashSaved(btn,msg){if(!btn)return;const old=btn.textContent;btn.textContent=msg||'Saved ✓';btn.classList.add('saved-flash');setTimeout(()=>{btn.textContent=old;btn.classList.remove('saved-flash');},2200);}
 $('#set-video').onchange=e=>{const f=e.target.files[0];if(!f)return;let v=$('#bg-video');if(!v){v=document.createElement('video');v.id='bg-video';v.autoplay=true;v.muted=true;v.loop=true;v.style.cssText='position:fixed;inset:0;width:100%;height:100%;object-fit:cover';document.body.prepend(v);}$('#bg-layer').style.background='none';v.src=URL.createObjectURL(f);store.set('bg','video');};
-// Display tab: clock style + greeting (matches screenshots)
+// Display tab: clock style + greeting
 const CLOCKS={analog:'Analog',rectangle:'Rectangle',modern:'Text'};
 const CLOCK_MIGRATION={'analog-rect':'rectangle','analog-minimal':'analog','digital-minimal':'modern','digital-modern':'modern','digital-bold':'modern','digital-outlined':'modern',thin:'modern',outline:'modern',glass:'rectangle',bold:'modern'};
 const CLOCK_ORDER=['modern','analog','rectangle'];
@@ -442,7 +442,7 @@ $('#set-custom-greet').value=store.get('customGreet','');$('#set-custom-greet').
 $('#set-clock-size').oninput=e=>{store.set('clockSize',+e.target.value);applyClockSize();};
 applyClockSize();
 
-// Suite modules: Discard / Dimmer / YT (settings persist; engines dormant in Frostline)
+// Companion modules: Discard / Shade / Theater (settings persist)
 function sliderRow(label,desc,min,max,step,val,fmt,cb){const d=document.createElement('div');d.className='srow';const t=document.createElement('div');t.textContent=label;if(desc){const s=document.createElement('small');s.textContent=desc;t.appendChild(document.createElement('br'));t.appendChild(s);}const r=document.createElement('input');r.type='range';r.min=min;r.max=max;r.step=step;r.value=val;const b=document.createElement('b');b.textContent=fmt(val);r.oninput=()=>{b.textContent=fmt(+r.value);cb(+r.value);};d.appendChild(t);d.appendChild(r);d.appendChild(b);return d;}
 let disc=Object.assign({enabled:1,idle:15,grace:60,minTabs:3,neverActive:1,neverAudible:1,neverPinned:1,neverForm:1,whitelist:'',memPressure:0,memThreshold:20},store.get('discardCfg',{}));
 const DISC_PRESETS={gentle:{idle:30,minTabs:5,grace:120},balanced:{idle:15,minTabs:3,grace:60},aggressive:{idle:5,minTabs:1,grace:30}};
@@ -452,30 +452,30 @@ function fxEq(x,y){x=x||{};y=y||{};return!!x.dimmer===!!y.dimmer&&!!x.reader===!
 
 function dimValsMatch(pv){const v=(dim.vals||{});return Object.keys(pv).every(k=>v[k]===pv[k]);}
 function dimEnsureShape(){dim.fx=dim.fx||{};dim.vals=Object.assign({dimmer:45,reader:75,blur:50},dim.vals||{});if(!['dimmer','reader','blur'].includes(dim.edit))dim.edit='dimmer';dim.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},dim.scopes||{});}
-function saveDisc(){store.set('discardCfg',disc);try{chrome.storage.local.set({aurora_discardCfg:disc});}catch{}}
+function saveDisc(){store.set('discardCfg',disc);try{chrome.storage.local.set({frostline_discardCfg:disc});}catch{}}
 function renderDiscard(){const t=$('#disc-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Discard',disc.enabled,()=>{disc.enabled=disc.enabled?0:1;saveDisc();renderDiscard();}));}const s=$('#disc-sliders');if(s){s.innerHTML='';s.appendChild(sliderRow('Idle Minutes','Tabs inactive this long become eligible',1,120,1,disc.idle,v=>v+'m',v=>{disc.idle=v;saveDisc();syncDiscPresets();}));s.appendChild(sliderRow('Grace Period',"Don't discard tabs newer than this",10,300,5,disc.grace,v=>v+'s',v=>{disc.grace=v;saveDisc();syncDiscPresets();}));s.appendChild(sliderRow('Min Inactive Tabs','',1,20,1,disc.minTabs,v=>''+v,v=>{disc.minTabs=v;saveDisc();syncDiscPresets();}));}const t2=$('#disc-toggles2');if(t2){t2.innerHTML='';[['neverActive','Never discard active tab'],['neverAudible','Never discard audible tab'],['neverPinned','Never discard pinned tab'],['neverForm','Never discard unsaved forms'],['memPressure','Memory pressure']].forEach(([k,label])=>{t2.appendChild(toggleRow(label,disc[k],()=>{disc[k]=disc[k]?0:1;saveDisc();renderDiscard();}));});if(disc.memPressure)t2.appendChild(sliderRow('Free-memory threshold','',5,50,1,disc.memThreshold,v=>v+'%',v=>{disc.memThreshold=v;saveDisc();}));}const w=$('#disc-wl');if(w&&w.value!==disc.whitelist)w.value=disc.whitelist;syncDiscPresets();paintDiscStatus();}
-function paintDiscStatus(){const el=$('#disc-status');if(!el)return;const done=s=>{if(!s||!s.ts){el.textContent='No runs yet — press Discard now or wait for the minute check.';return;}const d=new Date(s.ts);const p2=n=>String(n).padStart(2,'0');el.textContent=`Last check ${p2(d.getHours())}:${p2(d.getMinutes())} · ${s.checked||0} tabs · ${s.discarded||0} discarded${s.failed?` · ${s.failed} mark failed${s.lastErr?': '+s.lastErr:''}`:''}`;};try{if(chrome.storage&&chrome.storage.local)chrome.storage.local.get('aurora_discStatus',o=>done(o&&o.aurora_discStatus));else done(null);}catch{done(null);}}
+function paintDiscStatus(){const el=$('#disc-status');if(!el)return;const done=s=>{if(!s||!s.ts){el.textContent='No runs yet — press Discard now or wait for the minute check.';return;}const d=new Date(s.ts);const p2=n=>String(n).padStart(2,'0');el.textContent=`Last check ${p2(d.getHours())}:${p2(d.getMinutes())} · ${s.checked||0} tabs · ${s.discarded||0} discarded${s.failed?` · ${s.failed} mark failed${s.lastErr?': '+s.lastErr:''}`:''}`;};try{if(chrome.storage&&chrome.storage.local)chrome.storage.local.get('frostline_discStatus',o=>done(o&&o.frostline_discStatus));else done(null);}catch{done(null);}}
 $('#disc-run').onclick=()=>{const b=$('#disc-run');try{chrome.runtime.sendMessage({cmd:'discard-now'},r=>{paintDiscStatus();if(r)flashSaved(b,`✓ ${r.discarded||0} discarded`);});}catch{paintDiscStatus();}};
 $$('#disc-presets button').forEach(b=>b.onclick=()=>{const p=b.dataset.p;if(p==='gentle')Object.assign(disc,{idle:30,minTabs:5,grace:120});else if(p==='balanced')Object.assign(disc,{idle:15,minTabs:3,grace:60});else Object.assign(disc,{idle:5,minTabs:1,grace:30});saveDisc();renderDiscard();});
 $('#disc-wl').onchange=e=>{disc.whitelist=e.target.value;saveDisc();};
 let dim=Object.assign({enabled:1,intensity:0,color:'black',blur:0,white:1,dark:0,mode:'overlay',sched:0,startH:20,endH:7},store.get('dimmerCfg',{}));
-(function(){try{if(!localStorage.getItem('aurora_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));dim.intensity=d.intensity;saveDim();}localStorage.setItem('aurora_dimMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('aurora_modeMigrated')){const d=store.get('dimmerCfg',null);if(d){let mm=d.mode;if(d.warm)mm='reader';else if(d.blur&&(!mm||mm==='overlay'))mm='blur';else if(!mm||mm==='overlay'||mm==='media-only')mm='dimmer';if(!['dimmer','reader','blur'].includes(mm))mm='dimmer';d.mode=mm;store.set('dimmerCfg',d);dim.mode=mm;}localStorage.setItem('aurora_modeMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('aurora_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('aurora_fxMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('aurora_valsMigrated')){const d=store.get('dimmerCfg',null);if(d){d.vals=Object.assign({dimmer:45,reader:75,blur:50},d.vals||{});if(typeof d.intensity==='number'&&d.vals.dimmer==null)d.vals.dimmer=d.intensity;if(!d.fx||(!d.fx.dimmer&&!d.fx.reader&&!d.fx.blur))d.fx={dimmer:1};if(!['dimmer','reader','blur'].includes(d.edit))d.edit='dimmer';if(d.scope!=='media')d.scope='page';store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('aurora_valsMigrated','1');}}catch{}})();
-(function(){try{if(!localStorage.getItem('aurora_scopesMigrated')){const d=store.get('dimmerCfg',null);if(d){const leg=d.scope;d.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},d.scopes||{});if(leg==='media'){if(!d.scopes.dimmer||d.scopes.dimmer==='page'){/* keep page default */} ['dimmer','blur'].forEach(k=>{if(d.scopes[k]==='page'&&leg==='media')d.scopes[k]='media';});d.scopes.reader='page';}delete d.scope;store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('aurora_scopesMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_dimMigrated')){const d=store.get('dimmerCfg',null);if(d&&typeof d.intensity==='number'){d.intensity=Math.min(100,Math.max(0,100-d.intensity));dim.intensity=d.intensity;saveDim();}localStorage.setItem('frostline_dimMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_modeMigrated')){const d=store.get('dimmerCfg',null);if(d){let mm=d.mode;if(d.warm)mm='reader';else if(d.blur&&(!mm||mm==='overlay'))mm='blur';else if(!mm||mm==='overlay'||mm==='media-only')mm='dimmer';if(!['dimmer','reader','blur'].includes(mm))mm='dimmer';d.mode=mm;store.set('dimmerCfg',d);dim.mode=mm;}localStorage.setItem('frostline_modeMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_fxMigrated')){const d=store.get('dimmerCfg',null);if(d&&!d.fx){const fx={dimmer:0,reader:0,blur:0};if(d.warm)fx.reader=1;if(d.blur)fx.blur=1;if(d.mode==='reader')fx.reader=1;else if(d.mode==='blur')fx.blur=1;if(!fx.reader&&!fx.blur)fx.dimmer=1;d.fx=fx;store.set('dimmerCfg',d);dim.fx=fx;}localStorage.setItem('frostline_fxMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_valsMigrated')){const d=store.get('dimmerCfg',null);if(d){d.vals=Object.assign({dimmer:45,reader:75,blur:50},d.vals||{});if(typeof d.intensity==='number'&&d.vals.dimmer==null)d.vals.dimmer=d.intensity;if(!d.fx||(!d.fx.dimmer&&!d.fx.reader&&!d.fx.blur))d.fx={dimmer:1};if(!['dimmer','reader','blur'].includes(d.edit))d.edit='dimmer';if(d.scope!=='media')d.scope='page';store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('frostline_valsMigrated','1');}}catch{}})();
+(function(){try{if(!localStorage.getItem('frostline_scopesMigrated')){const d=store.get('dimmerCfg',null);if(d){const leg=d.scope;d.scopes=Object.assign({dimmer:'page',reader:'page',blur:'page'},d.scopes||{});if(leg==='media'){if(!d.scopes.dimmer||d.scopes.dimmer==='page'){/* keep page default */} ['dimmer','blur'].forEach(k=>{if(d.scopes[k]==='page'&&leg==='media')d.scopes[k]='media';});d.scopes.reader='page';}delete d.scope;store.set('dimmerCfg',d);Object.assign(dim,d);}localStorage.setItem('frostline_scopesMigrated','1');}}catch{}})();
 let dimSites=store.get('dimmerSites',{});
-function saveDim(){store.set('dimmerCfg',dim);store.set('dimmerSites',dimSites);try{chrome.storage.local.set({aurora_dimmerCfg:dim});chrome.runtime.sendMessage({cmd:'dim-apply'});}catch{}}
+function saveDim(){store.set('dimmerCfg',dim);store.set('dimmerSites',dimSites);try{chrome.storage.local.set({frostline_dimmerCfg:dim});chrome.runtime.sendMessage({cmd:'dim-apply'});}catch{}}
 
 function renderDimmer(){dimEnsureShape();const t=$('#dim-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Shade',dim.enabled,()=>{dim.enabled=dim.enabled?0:1;saveDim();renderDimmer();}));t.appendChild(toggleRow('Whitescreen protection',dim.white,()=>{dim.white=dim.white?0:1;saveDim();renderDimmer();}));t.appendChild(toggleRow('Dark mode',dim.dark,()=>{dim.dark=dim.dark?0:1;saveDim();renderDimmer();}));}}
 function flashScopeDenied(btn){if(!btn)return;btn.classList.add('denied');setTimeout(()=>btn.classList.remove('denied'),650);}
 let yt=Object.assign({enabled:1,wfs:1,remember:1,shortcut:1},store.get('ytCfg',{}));
 function thShapeY(){if(typeof yt.wfs!=='number')yt.wfs=yt.wfs?1:1;if(typeof yt.remember!=='number')yt.remember=yt.remember?1:1;if(typeof yt.shortcut!=='number')yt.shortcut=yt.shortcut?1:1;}
-function saveYt(push){thShapeY();const clean={enabled:yt.enabled?1:0,wfs:yt.wfs?1:0,remember:yt.remember?1:0,shortcut:yt.shortcut?1:0};yt=clean;store.set('ytCfg',clean);try{chrome.storage.local.set({aurora_ytCfg:clean});if(push!==false)chrome.runtime.sendMessage({cmd:'theater-apply'});}catch{}}
+function saveYt(push){thShapeY();const clean={enabled:yt.enabled?1:0,wfs:yt.wfs?1:0,remember:yt.remember?1:0,shortcut:yt.shortcut?1:0};yt=clean;store.set('ytCfg',clean);try{chrome.storage.local.set({frostline_ytCfg:clean});if(push!==false)chrome.runtime.sendMessage({cmd:'theater-apply'});}catch{}}
 function renderYT(){thShapeY();const t=$('#yt-toggles');if(t){t.innerHTML='';t.appendChild(toggleRow('Enable Theater',yt.enabled,()=>{yt.enabled=yt.enabled?0:1;saveYt();renderYT();}));t.appendChild(toggleRow('Remember per video',yt.remember,()=>{yt.remember=yt.remember?0:1;saveYt(false);renderYT();}));t.appendChild(toggleRow('Keyboard shortcut',yt.shortcut,()=>{yt.shortcut=yt.shortcut?0:1;saveYt(false);renderYT();}));}}
-try{if(!window.__auroraYtSync){window.__auroraYtSync=1;chrome.storage.onChanged.addListener((ch,area)=>{if(area==='local'&&ch.aurora_ytCfg&&ch.aurora_ytCfg.newValue){try{yt=Object.assign(yt,ch.aurora_ytCfg.newValue);thShapeY();renderYT();}catch{}}});}}catch{}
+try{if(!window.__frostlineYtSync){window.__frostlineYtSync=1;chrome.storage.onChanged.addListener((ch,area)=>{if(area==='local'&&ch.frostline_ytCfg&&ch.frostline_ytCfg.newValue){try{yt=Object.assign(yt,ch.frostline_ytCfg.newValue);thShapeY();renderYT();}catch{}}});}}catch{}
 renderDiscard();renderDimmer();renderYT();
-// Command palette (Suite: sections, keyboard nav, engine fallback)
+// Command palette (sections, keyboard nav, engine fallback)
 
 const DEFAULT_AGENTS=[['ChatGPT','https://chat.openai.com'],['Gemini','https://gemini.google.com'],['Claude','https://claude.ai'],['DeepSeek','https://chat.deepseek.com'],['Grok','https://grok.com'],['Copilot','https://copilot.microsoft.com'],['Perplexity','https://perplexity.ai']];
 let agents=store.get('agents',null);
@@ -529,7 +529,7 @@ paintHoliday();
 // ── Backup status (large/bold/centered, persists until next action) ──
 function setBackupStatus(msg,ok){const el=$('#backup-status');if(!el)return;el.textContent=msg||'';el.classList.toggle('ok',!!ok);el.classList.toggle('err',!ok);}
 // ── Reset to Frostline defaults (wipes both stores, replays fresh-install flow) ──
-(function(){const br=$('#btn-reset');if(!br)return;br.onclick=async()=>{if(!confirm('Reset all Frostline settings to fresh defaults? This clears every setting, API key and token, then restarts the setup wizard.'))return;setBackupStatus('Resetting…',true);try{pomoClearTimer();}catch{}try{if(wxAbort)wxAbort.abort();}catch{}try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.indexOf('aurora_')===0)localStorage.removeItem(k);}}catch{}try{if(chrome&&chrome.storage&&chrome.storage.local){const all=await chrome.storage.local.get(null);const ks=Object.keys(all||{}).filter(k=>k.indexOf('aurora_')===0);if(ks.length)await chrome.storage.local.remove(ks);}}catch{}try{await seedFreshDefaults();}catch{}location.reload();};})();
+(function(){const br=$('#btn-reset');if(!br)return;br.onclick=async()=>{if(!confirm('Reset all Frostline settings to fresh defaults? This clears every setting, API key and token, then restarts the setup wizard.'))return;setBackupStatus('Resetting…',true);try{pomoClearTimer();}catch{}try{if(wxAbort)wxAbort.abort();}catch{}try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.indexOf('frostline_')===0)localStorage.removeItem(k);}}catch{}try{if(chrome&&chrome.storage&&chrome.storage.local){const all=await chrome.storage.local.get(null);const ks=Object.keys(all||{}).filter(k=>k.indexOf('frostline_')===0);if(ks.length)await chrome.storage.local.remove(ks);}}catch{}try{await seedFreshDefaults();}catch{}location.reload();};})();
 // ── Onboarding: instruction card + setup wizard (fresh installs only, one-shot) ──
 let onbNews=1,onbGh=0;
 function onbShould(){try{return store.get('onb',1)===0;}catch{return false;}}
