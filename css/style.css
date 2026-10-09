@@ -351,6 +351,11 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 #search-input::placeholder{color:rgba(255,255,255,.45)}
 #search-form{opacity:.5;transition:width .38s cubic-bezier(.2,.8,.2,1),border-color .2s,opacity .25s}
 #search-form:hover,#search-form:focus-within{opacity:1;border-color:rgba(255,255,255,.3)}
+#search-form{position:relative}
+#search-mag{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;color:rgba(255,255,255,.45);pointer-events:none;animation:magPulse 5s ease-in-out infinite}
+#search-mag svg{display:block}
+#search-form.mag-hide #search-mag{display:none}
+@keyframes magPulse{0%,100%{opacity:.45}50%{opacity:.9}}
 #settings-modal .set-tabs button{width:auto;height:38px;border-radius:12px;border:none;background:transparent;color:rgba(255,255,255,.62);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;transition:.2s;font-size:13px;font-weight:500;white-space:nowrap;position:relative;z-index:1;opacity:.7}
 #settings-modal .set-tabs button.active{color:#fff;font-weight:600;background:transparent;box-shadow:none;text-shadow:0 1px 8px rgba(0,0,0,.65);opacity:1}
 #settings-modal .set-tabs button:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.08)}
@@ -471,9 +476,11 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 .flipx{display:inline-block;transform:scaleX(-1)}
 #task-list .txt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal}
 #task-list li.open .txt{white-space:normal;overflow:visible;display:block}
-.task-pen{background:none;border:none;cursor:pointer;font-size:12px;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;opacity:0;transition:opacity .15s,color .15s}
-#task-list li:hover .task-pen{opacity:1}
+.task-pen,.task-del{background:none;border:none;cursor:pointer;font-size:12px;color:rgba(255,255,255,.3);padding:2px;flex-shrink:0;opacity:0;transition:opacity .15s,color .15s}
+#task-list li:hover .task-pen,#task-list li:hover .task-del{opacity:1}
 .task-pen:hover{color:rgba(255,255,255,.6)}
+.task-del svg{display:block}
+.task-del:hover{color:#f87171}
 #task-list .txt:has(.task-edit-input){display:block;overflow:visible}
 .task-edit-input{flex:1;min-width:0;width:100%;box-sizing:border-box;display:block;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:13px;line-height:1.45;padding:6px 8px;outline:none;font-family:inherit;resize:none;overflow:hidden;white-space:pre-wrap;word-break:break-word}
 #gh-token.invalid{border-color:#ef4444!important;box-shadow:0 0 0 2px rgba(239,68,68,.35)}
