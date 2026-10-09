@@ -90,14 +90,25 @@
       if (fx && fx.hasAttribute('theater')) { try { fx.removeAttribute('theater'); } catch {} }
     } catch {}
   }
+  // YouTube's own fullscreen and our windowed mode both size and position the
+  // player. Applying both at once left the controls unpainted and the frame
+  // displaced, so windowed mode stands down while native fullscreen owns the
+  // element, and resumes when the user leaves it.
+  function nativeFs() {
+    try { return !!(document.fullscreenElement || document.webkitFullscreenElement); } catch { return false; }
+  }
   function applyAll() {
     if (!isWatchPage()) { cleanup(); return; }
     const de = document.documentElement;
-    const wfsOn = !!(cfg.enabled && cfg.wfs);
+    const wfsOn = !!(cfg.enabled && cfg.wfs && !nativeFs());
     if (wfsOn) theaterOn(); else theaterOff();
     de.classList.toggle('frostline-th-wfs', wfsOn);
     de.classList.toggle('frostline-th', !!cfg.enabled);
     try { window.dispatchEvent(new Event('resize')); } catch {}
+  }
+  function onNativeFs() {
+    try { tipHide(); } catch {}
+    try { applyAll(); } catch {}
   }
   function onKey(e) {
     try {
@@ -330,6 +341,8 @@
     });
   } catch {}
   try { document.addEventListener('yt-navigate-finish', () => { if (cfg.enabled && isWatchPage()) { applyAll(); ensureButtons(); } else cleanup(); }); } catch {}
+  try { document.addEventListener('fullscreenchange', onNativeFs); } catch {}
+  try { document.addEventListener('webkitfullscreenchange', onNativeFs); } catch {}
   let lastUrl = '';
   try { lastUrl = location.href; } catch {}
   setInterval(() => {

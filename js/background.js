@@ -351,7 +351,10 @@ function frostlineTheaterBoot(cfg){
     var de=document.documentElement;
     // Windowed geometry comes from our fixed player rules alone. Clicking
     // YouTube's own theater toggle re-lays-out its player behind our back and
-    // is not needed for the windowed frame.
+    // is not needed for the windowed frame. While YouTube's own fullscreen
+    // holds the element, windowed stands down: both sizing it at once left the
+    // controls unpainted and the frame displaced.
+    try{if(document.fullscreenElement||document.webkitFullscreenElement)wfs=false;}catch(_){}
     de.classList.toggle('frostline-th-wfs',wfs);
     de.classList.add('frostline-th');
     var exitTh=function(){try{var fx=document.querySelector('ytd-watch-flexy');var on=document.querySelector('ytd-watch-flexy[theater]')||(fx&&fx.hasAttribute('theater'));if(!on)return;var cands=[document.querySelector('.ytp-size-button'),document.querySelector('button.ytp-size-button')].filter(Boolean);for(var ci=0;ci<cands.length;ci++){try{cands[ci].click();}catch(_){}}if(fx&&fx.hasAttribute('theater')){try{fx.removeAttribute('theater');}catch(_){}}}catch(_){}};
