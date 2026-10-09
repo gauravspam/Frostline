@@ -43,7 +43,7 @@ function tick(){
   $('#h-hour').style.transform=`rotate(${degH}deg)`;
   const hs=$('#h-sec');if(hs)hs.style.transform=`rotate(${degS}deg)`;
   const mH=$('#m-hour'),mM=$('#m-minute'),mS=$('#m-sec');if(mH)mH.style.transform=`rotate(${degH}deg)`;if(mM)mM.style.transform=`rotate(${degM}deg)`;if(mS)mS.style.transform=`rotate(${degS}deg)`;
-  const ra=$('#rect-arc');if(ra)ra.style.strokeDashoffset=String(100-(n.getSeconds()/60)*100);
+  const ra=$('#rect-arc');if(ra){const sc=n.getSeconds();if(sc===0){ra.style.transition='none';}ra.style.strokeDashoffset=String(100-(sc/60)*100);if(sc===0){void ra.getBoundingClientRect().width;ra.style.transition='';}}
   const greet=h<6?'Good night':h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const name=store.get('name','');
   const showG=store.get('showGreet',0), showC=store.get('showCustom',0), custom=store.get('customGreet','');
