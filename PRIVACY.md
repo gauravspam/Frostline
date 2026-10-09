@@ -44,6 +44,7 @@ Frostline contacts only these services, and only for the features you use:
 | `api.unsplash.com` | Wallpaper search, only if you add a key |
 | `api.github.com` | GitHub profile activity, only if you set a username |
 | `news.google.com` | News headlines |
+| `suggestqueries.google.com` | Search suggestions as you type |
 | `get.geojs.io` and similar | Approximate city lookup during setup |
 
 No other network requests are made.

@@ -356,6 +356,17 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 #search-mag svg{display:block}
 #search-form.mag-hide #search-mag{display:none}
 @keyframes magPulse{0%,100%{opacity:.45}50%{opacity:.9}}
+#search-form{width:160px}
+#search-dim{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s;z-index:8}
+body.search-focus #search-dim{opacity:1;pointer-events:auto}
+body.search-focus #search-wrap{z-index:9}
+#search-suggest{position:absolute;top:calc(100% + 8px);left:0;right:0;list-style:none;margin:0;padding:6px;border-radius:16px;background:rgba(20,22,26,.94);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;max-height:320px;overflow-y:auto;z-index:60}
+#search-form.sug-open #search-suggest{display:block}
+#search-suggest li{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;font-size:13px;color:#ddd;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#search-suggest li.on,#search-suggest li:hover{background:rgba(255,255,255,.12);color:#fff}
+#search-suggest li.engine{color:#fff}
+#search-suggest li .s-ic{flex-shrink:0;color:rgba(255,255,255,.45);display:flex}
+#search-suggest li .s-ic svg{display:block}
 #settings-modal .set-tabs button{width:auto;height:38px;border-radius:12px;border:none;background:transparent;color:rgba(255,255,255,.62);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px;transition:.2s;font-size:13px;font-weight:500;white-space:nowrap;position:relative;z-index:1;opacity:.7}
 #settings-modal .set-tabs button.active{color:#fff;font-weight:600;background:transparent;box-shadow:none;text-shadow:0 1px 8px rgba(0,0,0,.65);opacity:1}
 #settings-modal .set-tabs button:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.08)}
