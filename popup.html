@@ -4,50 +4,56 @@
 <meta charset="utf-8" />
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{width:280px;padding:16px;font-family:system-ui,'Segoe UI',Roboto,sans-serif;background:rgba(16,19,22,.96);color:#fff}
-  h1{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
-  h1 .dot{width:8px;height:8px;border-radius:50%;background:#fbbf24}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:13px;color:#ddd}
-  .seg{display:flex;gap:4px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:4px;margin-top:12px}
-  .seg button{flex:1;border:none;background:transparent;color:#bbb;border-radius:9px;padding:8px 4px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit}
-  .seg button.on{background:rgba(255,255,255,.14);color:#fff}
-  .seg button.edit{box-shadow:0 0 0 2px #3b82f6}
-  .seg button.denied{background:rgba(239,68,68,.4)!important;color:#fff;transition:background .2s}
-  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:20px;margin:0;min-width:0}
-  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(255,255,255,.18)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;margin-top:-5px;box-shadow:0 1px 6px rgba(0,0,0,.5);cursor:pointer}
-  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(255,255,255,.18)}
-  input[type=range]::-moz-range-thumb{width:14px;height:14px;border:none;border-radius:50%;background:#fff;cursor:pointer}
+  body{width:300px;padding:16px 14px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:#000;color:#fff}
+  h1.sec{font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin:16px 4px 8px}
+  h1.sec:first-child{margin-top:2px}
+  .card{background:#1c1c1e;border-radius:18px;padding:6px 14px 14px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:0;padding:10px 0;font-size:14px;color:#fff}
+  .card .row+.row{border-top:1px solid rgba(255,255,255,.08)}
+  .seg{display:flex;gap:0;background:rgba(118,118,128,.24);border-radius:12px;padding:3px;margin-top:12px}
+  .seg button{flex:1;border:none;background:transparent;color:rgba(255,255,255,.85);border-radius:9px;padding:8px 4px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+  .seg button.on{background:#636366;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+  .seg button.edit{box-shadow:0 0 0 2px #0a84ff}
+  .seg button.denied{background:rgba(255,69,58,.4)!important;color:#fff;transition:background .2s}
+  .seg button:disabled{opacity:.35}
+  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:22px;margin:0;min-width:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(120,120,128,.35)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;margin-top:-7px;box-shadow:0 1px 5px rgba(0,0,0,.5);cursor:pointer}
+  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(120,120,128,.35)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:#fff;cursor:pointer}
   .val{min-width:44px;text-align:right;font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
-  .val.preview{color:#fbbf24}
+  .val.preview{color:#0a84ff}
   .hint{font-size:11px;color:rgba(255,255,255,.4);margin-top:10px}
-  .tswitch{position:relative;width:40px;height:22px;border-radius:999px;background:rgba(255,255,255,.15);border:none;cursor:pointer;flex-shrink:0}
-  .tswitch i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s}
-  .tswitch.on{background:#4ade80}
+  .tswitch{position:relative;width:44px;height:26px;border-radius:999px;background:rgba(120,120,128,.32);border:none;cursor:pointer;flex-shrink:0;transition:background .2s}
+  .tswitch i{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+  .tswitch.on{background:#34c759}
   .tswitch.on i{left:20px}
   .rgroup{display:flex;align-items:center;gap:8px;flex-shrink:0}
-  .rbtn{width:26px;height:26px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit;transition:.15s}
-  .rbtn:hover{background:rgba(255,255,255,.12);color:#fff}
+  .rbtn{width:28px;height:28px;border-radius:10px;border:none;background:rgba(118,118,128,.24);color:rgba(255,255,255,.7);cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit;transition:.15s}
+  .rbtn:hover{background:rgba(118,118,128,.4);color:#fff}
   .rbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .rbtn.pending{border-color:#ef4444;color:#ef4444;background:rgba(239,68,68,.12);animation:rpulse 1s ease-in-out infinite}
+  .rbtn.pending{color:#ff453a;background:rgba(255,69,58,.14);animation:rpulse 1s ease-in-out infinite}
   .rbtn.busy{opacity:.5;pointer-events:none}
-  @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
-  .rnote{font-size:11px;color:#f87171;margin-top:6px;display:none}
+  @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}50%{box-shadow:0 0 0 5px rgba(255,69,58,0)}}
+  .rnote{font-size:12px;color:#ff9f9a;margin:4px 0 2px;display:none}
   .rnote.show{display:block}
 </style>
 </head>
 <body>
-  <h1><span class="dot"></span>Shade</h1>
+  <h1 class="sec">Shade</h1>
+  <div class="card">
   <div class="row"><span>Enable Shade</span><span class="rgroup"><button class="rbtn" id="pp-rdim" title="Re-apply Shade to every tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></span></div>
   <div class="rnote" id="pp-rdim-note">Shade state does not match this page. Reload the tab, or press refresh to re-apply.</div>
   <div class="row"><input type="range" id="pp-intensity" min="0" max="100" step="1" value="40" /><span class="val" id="pp-val">40%</span></div>
   <div class="seg" id="pp-mode"><button data-m="dimmer">Dim</button><button data-m="reader">Reader</button><button data-m="blur">Blur</button></div>
   <div class="seg" id="pp-scope"><button data-s="page">Page</button><button data-s="media">Media</button></div>
-  <hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:14px 0 2px" />
-  <h1><span class="dot" style="background:#ff0000"></span>Theater</h1>
+  </div>
+  <h1 class="sec">Theater</h1>
+  <div class="card">
   <div class="row"><span>Enable Theater</span><span class="rgroup"><button class="rbtn" id="pp-rt" title="Re-apply Theater to every YouTube tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></span></div>
   <div class="rnote" id="pp-rt-note">Theater state does not match this page. Reload the tab, or press refresh to re-apply.</div>
+  </div>
 
-  <script src="js/popup.js?v=5"></script>
+  <script src="js/popup.js?v=6"></script>
 </body>
 </html>
