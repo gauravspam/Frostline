@@ -325,14 +325,13 @@ const FROSTLINE_TIP_CSS = '#frostline-th-tip.ytp-tooltip{position:absolute!impor
 function theaterCss(cfg){
   let css='';
   css+='@media print{html.frostline-th-wfs{overflow:visible!important}}';
-  // Windowed mode makes #movie_player position:fixed, so the YouTube control bar
-  // is absolutely positioned against a fixed ancestor. Pin our button to its
-  // normal in-flow slot and stop it inheriting the translateY from the chrome
-  // auto-hide animation, which otherwise parks it off-screen until the bar settles.
-  // Stretch (the row default) instead of centering, so the button can never end
-  // up taller than its siblings, and block the icon to kill the inline baseline
-  // gap that pushed it above the pill.
-  css+='.frostline-th-btn{flex:0 0 auto!important;align-self:stretch!important;position:relative!important;opacity:1!important;visibility:visible!important;transform:none!important;translate:none!important;transition:none!important}';
+  // Our button must size exactly like its siblings. The row governs button
+  // geometry (stretch, icon padding); any flex or alignment override of our own
+  // makes us diverge on some player variant, sitting higher or lower than the
+  // rest of the pill. So declare nothing geometric here. The translate and
+  // transition resets stay: without them the chrome auto-hide animation parks
+  // the button off-screen until the bar settles.
+  css+='.frostline-th-btn{position:relative!important;opacity:1!important;visibility:visible!important;transform:none!important;translate:none!important;transition:none!important}';
   css+='#frostline-th-wfs svg{display:block!important}';
   // Kill page scrolling while windowed: the fixed player covered the viewport, but
   // the document behind it kept its own scroll height and produced a stray
