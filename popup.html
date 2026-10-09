@@ -4,7 +4,9 @@
 <meta charset="utf-8" />
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{width:300px;padding:16px 14px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:#000;color:#fff;border-radius:20px;overflow:hidden}
+  html{background:transparent}
+  body{width:300px;padding:10px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:transparent;color:#fff}
+  .shell{background:#000;border-radius:22px;overflow:hidden;padding:16px 14px}
   h1.sec{font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin:16px 4px 8px}
   h1.sec:first-child{margin-top:2px}
   .card{background:#1c1c1e;border-radius:18px;padding:6px 14px 14px}
@@ -40,6 +42,7 @@
 </style>
 </head>
 <body>
+  <div class="shell">
   <h1 class="sec">Shade</h1>
   <div class="card">
   <div class="row"><span>Enable Shade</span><span class="rgroup"><button class="rbtn" id="pp-rdim" title="Re-apply Shade to every tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></span></div>
@@ -52,6 +55,7 @@
   <div class="card">
   <div class="row"><span>Enable Theater</span><span class="rgroup"><button class="rbtn" id="pp-rt" title="Re-apply Theater to every YouTube tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></span></div>
   <div class="rnote" id="pp-rt-note">Theater state does not match this page. Reload the tab, or press refresh to re-apply.</div>
+  </div>
   </div>
 
   <script src="js/popup.js?v=6"></script>

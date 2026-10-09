@@ -328,7 +328,7 @@ $$('#dock a.dock-btn').forEach(bindDockBtn);
 renderDock();
 
 // Settings drawer (preserve existing simple handlers, extend)
-function openDrawer(){overlay.classList.remove('hidden');$$('.modal').forEach(m=>{m.classList.add('hidden');m.classList.remove('closing');});const s=$('#settings-modal');if(s){s.classList.remove('hidden');try{chrome.storage.local.get('frostline_dimmerCfg',o=>{if(o&&o.frostline_dimmerCfg){dim=Object.assign(dim,o.frostline_dimmerCfg);renderDimmer();}});}catch{}requestAnimationFrame(()=>moveSetGlider(true));}}
+function openDrawer(){overlay.classList.remove('hidden');$$('.modal').forEach(m=>{m.classList.add('hidden');m.classList.remove('closing');});const s=$('#settings-modal');if(s){s.classList.remove('hidden');try{chrome.storage.local.get('frostline_dimmerCfg',o=>{if(o&&o.frostline_dimmerCfg){dim=Object.assign(dim,o.frostline_dimmerCfg);renderDimmer();}});}catch{}requestAnimationFrame(()=>moveSetGlider(true));setTimeout(()=>moveSetGlider(true),350);try{if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>moveSetGlider(true));}catch{}}}
 const _closeAllFn = closeAll;
 function closeAllNew(){overlay.classList.add('hidden');$$('.modal').forEach(playClose);const s=$('#settings-modal');if(s)playClose(s);}
 overlay.onclick = closeAllNew; $$('.m-close').forEach(b=>b.onclick=closeAllNew);
