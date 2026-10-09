@@ -329,7 +329,11 @@ function theaterCss(cfg){
   // is absolutely positioned against a fixed ancestor. Pin our button to its
   // normal in-flow slot and stop it inheriting the translateY from the chrome
   // auto-hide animation, which otherwise parks it off-screen until the bar settles.
-  css+='.frostline-th-btn{flex:0 0 auto!important;align-self:center!important;position:relative!important;opacity:1!important;visibility:visible!important;transform:none!important;translate:none!important;transition:none!important}';
+  // Stretch (the row default) instead of centering, so the button can never end
+  // up taller than its siblings, and block the icon to kill the inline baseline
+  // gap that pushed it above the pill.
+  css+='.frostline-th-btn{flex:0 0 auto!important;align-self:stretch!important;position:relative!important;opacity:1!important;visibility:visible!important;transform:none!important;translate:none!important;transition:none!important}';
+  css+='#frostline-th-wfs svg{display:block!important}';
   // Kill page scrolling while windowed: the fixed player covered the viewport, but
   // the document behind it kept its own scroll height and produced a stray
   // scrollbar. Size the player from the box rather than the viewport, since a
