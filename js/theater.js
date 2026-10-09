@@ -145,11 +145,15 @@
   function tipHide() {
     try { const t = document.getElementById(TIP_ID); if (t) t.remove(); } catch {}
   }
+  // Native pills parent to .html5-video-player (not #movie_player), which sets
+  // the 11px type base, and float centred on the button with a 22px gap above
+  // it. Both measured live and constant across player sizes, so replicate both.
   function tipShow(btn) {
     try {
       tipHide();
-      const host = document.getElementById('movie_player');
-      if (!host || !btn || !btn.isConnected) return;
+      if (!btn || !btn.isConnected) return;
+      const host = (btn.closest && btn.closest('.html5-video-player')) || document.getElementById('movie_player');
+      if (!host) return;
       if (getComputedStyle(host).position === 'static') host.style.setProperty('position', 'relative', 'important');
       const tip = document.createElement('div');
       tip.id = TIP_ID;
@@ -178,9 +182,8 @@
       host.appendChild(tip);
       const br = btn.getBoundingClientRect();
       const hr = host.getBoundingClientRect();
-      const shift = Math.max(0, Math.round((br.width - tip.offsetWidth) / 2));
-      tip.style.left = (br.x - hr.x + shift) + 'px';
-      tip.style.top = (br.y - hr.y - tip.offsetHeight) + 'px';
+      tip.style.left = (br.x - hr.x + Math.round((br.width - tip.offsetWidth) / 2)) + 'px';
+      tip.style.top = (br.y - hr.y - tip.offsetHeight - 22) + 'px';
       tip.style.opacity = '1';
     } catch {}
   }
@@ -236,11 +239,22 @@
       };
       const svgW = '<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
       const bw = mk('frostline-th-wfs', 'Windowed fullscreen (`)', svgW);
+      // Fullscreen and windowed are mutually exclusive selections: clicking our
+      // button inside native fullscreen leaves fullscreen first and turns
+      // windowed on, instead of toggling blindly (which visibly did nothing).
+      // Toggling freely only applies outside fullscreen.
       bw.onclick = (e) => {
         tipHide();
         e.preventDefault();
         e.stopPropagation();
-        cfg.wfs = cfg.wfs ? 0 : 1;
+        let inFs = false;
+        try { inFs = !!(document.fullscreenElement || document.webkitFullscreenElement); } catch {}
+        if (inFs) {
+          try { if (document.exitFullscreen) document.exitFullscreen(); else if (document.webkitExitFullscreen) document.webkitExitFullscreen(); } catch {}
+          cfg.wfs = 1;
+        } else {
+          cfg.wfs = cfg.wfs ? 0 : 1;
+        }
         applyAll(); paintB();
         save({ wfs: cfg.wfs });
       };
