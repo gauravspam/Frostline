@@ -316,12 +316,6 @@ async function theaterEffWfs(cfg,url){
   }
   return{vid,wfs:!!cfg.wfs};
 }
-// Tooltip pill for the injected Windowed-fullscreen button. Values are a 1:1
-// transcription of YouTube's own modern (ytp-delhi-modern) control tooltip:
-// container font 118%/500/15px, frosted wrapper rgba(0,0,0,.3) + blur(16px) +
-// text-shadow, pill rgba(0,0,0,.3) + blur(16px) + radius 8px + padding 5px 9px,
-// shortcut badge 1px rgba(255,255,255,.3) / radius 4px / min-width 11px.
-const FROSTLINE_TIP_CSS = '#frostline-th-tip.ytp-tooltip{position:absolute!important;z-index:1003;pointer-events:none;font-size:118%;font-weight:500;line-height:15px;white-space:nowrap;display:block;opacity:0;transition:transform .2s cubic-bezier(.05,0,0,1),opacity .2s cubic-bezier(.05,0,0,1),top .2s cubic-bezier(.05,0,0,1)}#frostline-th-tip.ytp-tooltip[aria-hidden="false"]{opacity:1}#frostline-th-tip .ytp-tooltip-text-wrapper{border-radius:8px;background:rgba(0,0,0,.3);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);text-shadow:0 0 2px #000;opacity:0;transition:opacity .2s cubic-bezier(.05,0,0,1)}#frostline-th-tip[aria-hidden="false"] .ytp-tooltip-text-wrapper{opacity:1}#frostline-th-tip .ytp-tooltip-bottom-text{display:flex;align-items:center;background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border-radius:8px;padding:5px 9px;width:-webkit-max-content;width:max-content}#frostline-th-tip .ytp-tooltip-text{white-space:nowrap}#frostline-th-tip .ytp-tooltip-bottom-text{width:-webkit-max-content;width:max-content}#frostline-th-tip .ytp-tooltip-keyboard-shortcut{display:flex;justify-content:center;align-items:center;border:1px solid rgba(255,255,255,.3);min-width:11px;border-radius:4px;margin-left:4px;color:#fff;padding:0 2px}';
 function theaterCss(cfg){
   let css='';
   css+='@media print{html.frostline-th-wfs{overflow:visible!important}}';
@@ -349,7 +343,6 @@ function theaterCss(cfg){
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #content{padding-top:0!important}';
   // Disable Shade media-scope filters on YouTube when Theater is active.
   if(cfg.wfs)css+='html.frostline-th-wfs img,html.frostline-th-wfs video,html.frostline-th-wfs canvas,html.frostline-th-wfs picture,html.frostline-th-wfs [style*="background-image"]{filter:none!important}';
-  css+=FROSTLINE_TIP_CSS;
   return{css};
 }
 function frostlineTheaterBoot(cfg){
@@ -368,47 +361,6 @@ function frostlineTheaterBoot(cfg){
     var vid=function(){try{var u=new URL(location.href);if(u.hostname.indexOf('youtube.com')>=0){if(u.pathname==='/watch')return u.searchParams.get('v')||'';if(u.pathname.indexOf('/shorts/')===0)return u.pathname.split('/')[2]||'';}if(u.hostname==='youtu.be')return u.pathname.replace(/^\//,'').split('/')[0]||'';}catch(_){}return '';};
     var save=function(patch){var refresh=function(){try{if(chrome&&chrome.runtime&&chrome.runtime.sendMessage){chrome.runtime.sendMessage({cmd:'theater-apply'},function(){try{void chrome.runtime.lastError;}catch(_){}});}}catch(_){}};try{if(chrome&&chrome.storage&&chrome.storage.local){chrome.storage.local.get('frostline_ytCfg',function(o){try{var cur=((o&&o.frostline_ytCfg)||{});var c={enabled:1,wfs:cur.wfs?1:0,remember:(cur.remember===0?0:1),shortcut:(cur.shortcut===0?0:1)};Object.keys(patch||{}).forEach(function(k){c[k]=patch[k];});chrome.storage.local.set({frostline_ytCfg:c},function(){var v=vid();if(v&&c.remember){try{chrome.storage.local.get('frostline_theaterMem',function(m){try{var mem=((m&&m.frostline_theaterMem)||{});mem[v]={wfs:c.wfs?1:0};chrome.storage.local.set({frostline_theaterMem:mem},refresh);}catch(_){refresh();}});}catch(_){refresh();}}else{refresh();}});}catch(_){refresh();}});}}catch(_){refresh();}};
     var paintB=function(){var bw2=document.getElementById('frostline-th-wfs');if(bw2)bw2.setAttribute('aria-checked',wfs?'true':'false');};
-    var tipRaf=0;
-    var tipHide=function(){try{if(tipRaf){cancelAnimationFrame(tipRaf);tipRaf=0;}}catch(_){}try{var t=document.getElementById('frostline-th-tip');if(t)t.remove();}catch(_){}};
-    // YouTube translates .ytp-chrome-bottom while the chrome fades in and re-lays-out
-    // the bar when buttons come and go, so a pill placed once on mouseenter drifts
-    // off its button. Track the anchor each frame while the pill is visible.
-    var tipTrack=function(tip,anchor,host){var last='';var step=function(){tipRaf=0;
-      try{if(!tip.isConnected||!anchor.isConnected){tipHide();return;}
-        var ar=anchor.getBoundingClientRect(),hr=host.getBoundingClientRect();
-        var key=Math.round(ar.left)+':'+Math.round(ar.top);
-        if(key!==last){last=key;tip.style.left=(ar.left+ar.width/2-hr.left)+'px';tip.style.top=(ar.top-hr.top)+'px';}
-      }catch(_){tipHide();return;}
-      tipRaf=requestAnimationFrame(step);};
-      tipRaf=requestAnimationFrame(step);};
-    var tipShow=function(anchor){try{
-      tipHide();
-      if(!anchor||!anchor.isConnected)return;
-      try{anchor.style.setProperty('position','relative','important');}catch(_){}
-      try{anchor.style.setProperty('overflow','visible','important');}catch(_){}
-      var tip=document.createElement('div');tip.id='frostline-th-tip';tip.className='ytp-tooltip ytp-bottom';tip.setAttribute('aria-hidden','false');tip.setAttribute('aria-live','polite');
-      var wrap=document.createElement('div');wrap.className='ytp-tooltip-text-wrapper ytp-frosted-glass-fade-transition';
-      var row=document.createElement('div');row.className='ytp-tooltip-bottom-text';
-      var lb=document.createElement('span');lb.className='ytp-tooltip-text';try{lb.textContent='Windowed fullscreen';}catch(_){}
-      var kb=document.createElement('div');kb.className='ytp-tooltip-keyboard-shortcut';try{kb.textContent='`';}catch(_){}
-      row.appendChild(lb);row.appendChild(kb);
-      wrap.appendChild(row);
-      tip.appendChild(wrap);
-      // NB: parent the pill to #movie_player, never to the controls bar. The bar is
-      // only ~170px wide and an abs-positioned shrink-to-fit box is capped by its
-      // containing block, so the label wraps to two lines and the pill renders as
-      // a tall dark rectangle. Native YouTube parents tooltips to the player.
-      tip.style.cssText='position:absolute;pointer-events:none;display:block;white-space:nowrap;width:max-content;';
-      var host=document.getElementById('movie_player');
-      if(!host){var pp=anchor.parentNode;while(pp&&pp.id!=='movie_player')pp=pp.parentNode;host=(pp&&pp.id==='movie_player')?pp:null;}
-      if(!host){anchor.prepend(tip);return;}
-      try{if(host&&getComputedStyle(host).position==='static')host.style.setProperty('position','relative','important');}catch(_){}
-      host.appendChild(tip);
-      var ar=anchor.getBoundingClientRect(),hr=host.getBoundingClientRect();
-      tip.style.left=(ar.left+ar.width/2-hr.left)+'px';tip.style.top=(ar.top-hr.top)+'px';
-      tip.style.marginTop='-12px';tip.style.transform='translateX(-50%) translateY(-100%)';
-      tipTrack(tip,anchor,host);
-    }catch(_){}};
     var visBar=function(){var pick=function(s){try{var n=document.querySelector(s);if(n&&n.isConnected)return n;}catch(_){}return null;};var g=pick('#movie_player .ytp-settings-button')||pick('.ytp-settings-button');if(g&&g.parentNode){var p=g.parentNode;while(p&&p.nodeType===1){if(p.classList&&(p.classList.contains('ytp-right-controls')||p.classList.contains('ytp-chrome-controls')))return p;if(p.id==='movie_player')break;p=p.parentNode;}return g.parentNode;}return pick('#movie_player .ytp-right-controls')||pick('.ytp-right-controls')||pick('.ytp-chrome-controls .ytp-right-controls')||pick('.html5-video-player .ytp-right-controls')||pick('.ytp-chrome-controls')||pick('#movie_player');};
     var inject=function(){
       try{
@@ -422,7 +374,6 @@ function frostlineTheaterBoot(cfg){
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};
-        try{bw.addEventListener('mouseenter',function(){tipShow(bw);});bw.addEventListener('mouseleave',tipHide);}catch(_){}
         var anchor=bar.querySelector('.ytp-settings-button');
         var host=anchor?anchor.parentNode:bar;
         if(anchor){host.insertBefore(bw,anchor);}else{bar.insertBefore(bw,bar.firstChild);}
@@ -452,7 +403,6 @@ function frostlineTheaterBoot(cfg){
   }catch(_){}
 }
 function frostlineTheaterOff(){
-  try{tipHide();}catch(_){}
   try{
     try{document.documentElement.classList.remove('frostline-th-wfs','frostline-th');}catch(_){}
     if(window.__frostlineThIv){try{clearInterval(window.__frostlineThIv);}catch(_){}try{window.__frostlineThIv=0;}catch(_){}}

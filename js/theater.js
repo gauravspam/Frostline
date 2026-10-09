@@ -124,78 +124,6 @@
     } catch {}
   }
   try { document.addEventListener('keydown', onKey, true); } catch {}
-  let tipRaf = 0;
-  function tipHide() {
-    try { if (tipRaf) { cancelAnimationFrame(tipRaf); tipRaf = 0; } } catch {}
-    try { const t = document.getElementById('frostline-th-tip'); if (t) t.remove(); } catch {}
-  }
-  // YouTube slides/translates .ytp-chrome-bottom while the chrome fades in, and
-  // re-lays-out the bar when it gains or loses buttons. Placing the pill once on
-  // mouseenter lets it drift off the button, which reads as a horizontal
-  // misalignment. Track the anchor every frame while the pill is visible.
-  function tipTrack(tip, anchor, host) {
-    let last = '';
-    const step = () => {
-      tipRaf = 0;
-      try {
-        if (!tip.isConnected || !anchor.isConnected) { tipHide(); return; }
-        const ar = anchor.getBoundingClientRect();
-        const hr = host.getBoundingClientRect();
-        const key = Math.round(ar.left) + ':' + Math.round(ar.top);
-        if (key !== last) {
-          last = key;
-          tip.style.left = (ar.left + ar.width / 2 - hr.left) + 'px';
-          tip.style.top = (ar.top - hr.top) + 'px';
-        }
-      } catch { tipHide(); return; }
-      tipRaf = requestAnimationFrame(step);
-    };
-    tipRaf = requestAnimationFrame(step);
-  }
-  function tipShow(anchor) {
-    try {
-      tipHide();
-      if (!anchor || !anchor.isConnected) return;
-      try { anchor.style.setProperty('position', 'relative', 'important'); } catch {}
-      try { anchor.style.setProperty('overflow', 'visible', 'important'); } catch {}
-      const tip = document.createElement('div');
-      tip.id = 'frostline-th-tip';
-      tip.className = 'ytp-tooltip ytp-bottom';
-      tip.setAttribute('aria-hidden', 'false');
-      tip.setAttribute('aria-live', 'polite');
-      const wrap = document.createElement('div');
-      wrap.className = 'ytp-tooltip-text-wrapper ytp-frosted-glass-fade-transition';
-      const row = document.createElement('div');
-      row.className = 'ytp-tooltip-bottom-text';
-      const lb = document.createElement('span');
-      lb.className = 'ytp-tooltip-text';
-      lb.textContent = 'Windowed fullscreen';
-      const kb = document.createElement('div');
-      kb.className = 'ytp-tooltip-keyboard-shortcut';
-      kb.textContent = '`';
-      row.appendChild(lb); row.appendChild(kb);
-      wrap.appendChild(row);
-      tip.appendChild(wrap);
-      // NB: the pill must NOT be appended to the controls bar. The bar is only
-      // ~170px wide, and an absolutely-positioned shrink-to-fit box is capped by
-      // its containing block, so "Windowed fullscreen" wraps to two lines and the
-      // pill renders as a tall dark rectangle. Native YouTube parents its
-      // tooltips to #movie_player instead; do the same and position from rects.
-      tip.style.cssText = 'position:absolute;pointer-events:none;display:block;white-space:nowrap;width:max-content;';
-      let host = document.getElementById('movie_player');
-      if (!host) { let p = anchor.parentNode; while (p && p.id !== 'movie_player') p = p.parentNode; host = (p && p.id === 'movie_player') ? p : null; }
-      if (!host) { anchor.prepend(tip); return; }
-      try { if (host && getComputedStyle(host).position === 'static') host.style.setProperty('position', 'relative', 'important'); } catch {}
-      host.appendChild(tip);
-      const ar = anchor.getBoundingClientRect();
-      const hr = host.getBoundingClientRect();
-      tip.style.left = (ar.left + ar.width / 2 - hr.left) + 'px';
-      tip.style.top = (ar.top - hr.top) + 'px';
-      tip.style.marginTop = '-12px';
-      tip.style.transform = 'translateX(-50%) translateY(-100%)';
-      tipTrack(tip, anchor, host);
-    } catch {}
-  }
   function paintB() {
     const bw = document.getElementById('frostline-th-wfs');
     if (bw) bw.setAttribute('aria-checked', cfg.wfs ? 'true' : 'false');
@@ -246,14 +174,12 @@
       const svgW = '<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
       const bw = mk('frostline-th-wfs', 'Windowed fullscreen (`)', svgW);
       bw.onclick = (e) => {
-        tipHide();
         e.preventDefault();
         e.stopPropagation();
         cfg.wfs = cfg.wfs ? 0 : 1;
         applyAll(); paintB();
         save({ wfs: cfg.wfs });
       };
-      try { bw.addEventListener('mouseenter', () => tipShow(bw)); bw.addEventListener('mouseleave', tipHide); } catch {}
       const anchor = bar.querySelector('.ytp-settings-button');
       const host = anchor ? anchor.parentNode : bar;
       if (anchor) { host.insertBefore(bw, anchor); }
@@ -302,7 +228,6 @@
     } catch {}
   }
   function cleanup() {
-    tipHide();
     try { document.documentElement.classList.remove('frostline-th-wfs', 'frostline-th'); } catch {}
     try { const a = document.getElementById('frostline-th-wfs'); if (a) a.remove(); } catch {}
     try { const s = document.getElementById('frostline-th-str'); if (s) s.remove(); } catch {}
