@@ -149,7 +149,7 @@
       row.className = 'ytp-tooltip-bottom-text';
       const label = document.createElement('span');
       label.className = 'ytp-tooltip-text';
-      label.textContent = btn.getAttribute('title') || 'Windowed fullscreen';
+      label.textContent = 'Windowed fullscreen';
       const key = document.createElement('div');
       key.className = 'ytp-tooltip-keyboard-shortcut';
       key.textContent = '`';
@@ -202,17 +202,14 @@
       const bar = r.bar;
       if (!bar) return false;
       const mk = (id, title, svg) => {
-        // Title is the accessible name and the pill text. YouTube's own tooltip
-        // manager will not paint a pill for us: it binds to the buttons present
-        // when the player is built and marks them with
-        // ytp-frosted-glass-fade-transition, and .ytp-tooltip is opacity 0
-        // without that class. Our button is injected afterwards, so pillPill()
-        // renders it with YouTube's own classes instead.
+        // No title attribute: the browser would render its own black box under
+        // the bar, and YouTube's tooltip manager would render a second pill for
+        // the same string. tipShow() paints the single pill instead, using
+        // YouTube's own classes. The accessible name stays on aria-label.
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
         b.dataset.frostlineBv = '16';
-        b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
         b.setAttribute('aria-checked', 'false');
