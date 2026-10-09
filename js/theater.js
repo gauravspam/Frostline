@@ -147,6 +147,10 @@
       wrap.className = 'ytp-tooltip-text-wrapper ytp-frosted-glass-fade-transition';
       const row = document.createElement('div');
       row.className = 'ytp-tooltip-bottom-text';
+      // YouTube renders the label as an inline span and the shortcut badge as a
+      // display:flex div, so in a narrow container (fullscreen) the badge falls
+      // onto its own line. Pin the row to one line instead.
+      row.style.cssText = 'display:flex;align-items:center;white-space:nowrap;width:max-content';
       const label = document.createElement('span');
       label.className = 'ytp-tooltip-text';
       label.textContent = 'Windowed fullscreen';
@@ -157,6 +161,9 @@
       wrap.appendChild(row);
       tip.appendChild(wrap);
       tip.setAttribute('aria-hidden', 'false');
+      // The pill is absolutely positioned, so it shrink-wraps to the container
+      // and can wrap early. max-content keeps it as wide as its content.
+      tip.style.cssText = 'max-width:none;width:max-content';
       host.appendChild(tip);
       const br = btn.getBoundingClientRect();
       const hr = host.getBoundingClientRect();
