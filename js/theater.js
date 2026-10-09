@@ -124,6 +124,48 @@
     } catch {}
   }
   try { document.addEventListener('keydown', onKey, true); } catch {}
+  // Hover pill for the injected button. YouTube paints .ytp-tooltip only when it
+  // carries ytp-frosted-glass-fade-transition, which its own manager adds to the
+  // buttons present at player build time. Ours is injected later, so without this
+  // the title renders as the browser's own black box under the bar. Reusing
+  // YouTube's classes and its position math (above the button, centred on it)
+  // makes it indistinguishable from the Settings and CC pills.
+  const TIP_ID = 'frostline-th-tip';
+  function tipHide() {
+    try { const t = document.getElementById(TIP_ID); if (t) t.remove(); } catch {}
+  }
+  function tipShow(btn) {
+    try {
+      tipHide();
+      const host = document.getElementById('movie_player');
+      if (!host || !btn || !btn.isConnected) return;
+      if (getComputedStyle(host).position === 'static') host.style.setProperty('position', 'relative', 'important');
+      const tip = document.createElement('div');
+      tip.id = TIP_ID;
+      tip.className = 'ytp-tooltip ytp-bottom';
+      const wrap = document.createElement('div');
+      wrap.className = 'ytp-tooltip-text-wrapper ytp-frosted-glass-fade-transition';
+      const row = document.createElement('div');
+      row.className = 'ytp-tooltip-bottom-text';
+      const label = document.createElement('span');
+      label.className = 'ytp-tooltip-text';
+      label.textContent = btn.getAttribute('title') || 'Windowed fullscreen';
+      const key = document.createElement('div');
+      key.className = 'ytp-tooltip-keyboard-shortcut';
+      key.textContent = '`';
+      row.appendChild(label); row.appendChild(key);
+      wrap.appendChild(row);
+      tip.appendChild(wrap);
+      tip.setAttribute('aria-hidden', 'false');
+      host.appendChild(tip);
+      const br = btn.getBoundingClientRect();
+      const hr = host.getBoundingClientRect();
+      const shift = Math.max(0, Math.round((br.width - tip.offsetWidth) / 2));
+      tip.style.left = (br.x - hr.x + shift) + 'px';
+      tip.style.top = (br.y - hr.y - tip.offsetHeight) + 'px';
+      tip.style.opacity = '1';
+    } catch {}
+  }
   function paintB() {
     const bw = document.getElementById('frostline-th-wfs');
     if (bw) bw.setAttribute('aria-checked', cfg.wfs ? 'true' : 'false');
@@ -160,8 +202,12 @@
       const bar = r.bar;
       if (!bar) return false;
       const mk = (id, title, svg) => {
-        // Title feeds YouTube's native hover pill, the same one every other
-        // button shows. Screen readers still get the aria-label below.
+        // Title is the accessible name and the pill text. YouTube's own tooltip
+        // manager will not paint a pill for us: it binds to the buttons present
+        // when the player is built and marks them with
+        // ytp-frosted-glass-fade-transition, and .ytp-tooltip is opacity 0
+        // without that class. Our button is injected afterwards, so pillPill()
+        // renders it with YouTube's own classes instead.
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
@@ -176,12 +222,17 @@
       const svgW = '<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
       const bw = mk('frostline-th-wfs', 'Windowed fullscreen (`)', svgW);
       bw.onclick = (e) => {
+        tipHide();
         e.preventDefault();
         e.stopPropagation();
         cfg.wfs = cfg.wfs ? 0 : 1;
         applyAll(); paintB();
         save({ wfs: cfg.wfs });
       };
+      try {
+        bw.addEventListener('mouseenter', () => tipShow(bw));
+        bw.addEventListener('mouseleave', tipHide);
+      } catch {}
       const anchor = bar.querySelector('.ytp-settings-button');
       const host = anchor ? anchor.parentNode : bar;
       if (anchor) { host.insertBefore(bw, anchor); }
@@ -230,6 +281,7 @@
     } catch {}
   }
   function cleanup() {
+    tipHide();
     try { document.documentElement.classList.remove('frostline-th-wfs', 'frostline-th'); } catch {}
     try { const a = document.getElementById('frostline-th-wfs'); if (a) a.remove(); } catch {}
     try { const s = document.getElementById('frostline-th-str'); if (s) s.remove(); } catch {}
