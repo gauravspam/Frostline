@@ -339,10 +339,12 @@ function theaterCss(cfg){
   // YouTube sizes the inner video layer from the player's own aspect-ratio box,
   // so pinning the player alone leaves the frame letterboxed and offset inside
   // the viewport. Let the video layer fill the box and keep the frame intact.
-  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;transform:none!important;object-fit:contain!important;filter:none!important}';
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player .html5-video-player,html.frostline-th-wfs #movie_player .html5-video-container,html.frostline-th-wfs #movie_player video{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;left:0!important;top:0!important;transform:none!important;object-fit:contain!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #masthead-container,html.frostline-th-wfs #secondary,html.frostline-th-wfs ytd-comments,html.frostline-th-wfs #below{display:none!important}html.frostline-th-wfs #content{padding-top:0!important}';
-  // Disable Shade media-scope filters on YouTube when Theater is active.
-  if(cfg.wfs)css+='html.frostline-th-wfs img,html.frostline-th-wfs video,html.frostline-th-wfs canvas,html.frostline-th-wfs picture,html.frostline-th-wfs [style*="background-image"]{filter:none!important}';
+  // No filter reset on the video here: media-scope Shade paints the video
+  // element directly, and that must keep working while windowed. The page
+  // overlay stays off under windowed (see dimCss) because the fixed player
+  // covers the viewport, so it could never paint anyway.
   return{css};
 }
 function frostlineTheaterBoot(cfg){

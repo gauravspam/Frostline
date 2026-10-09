@@ -375,7 +375,7 @@ $('#search-input').addEventListener('input',()=>{const q=$('#search-input').valu
 $('#search-input').addEventListener('focus',()=>{document.body.classList.add('search-focus');const q=$('#search-input').value.trim();if(q)fetchSug(q,++sugSeq);});
 $('#search-input').addEventListener('blur',()=>{document.body.classList.remove('search-focus');clearTimeout(sugTimer);setTimeout(()=>hideSug(),120);});
 $('#search-input').addEventListener('keydown',e=>{
-  const rows=sugRows();if(e.key==='Escape'){if(rows.length){e.preventDefault();e.stopPropagation();hideSug();}return;}
+  const rows=sugRows();if(e.key==='Escape'){e.preventDefault();e.stopPropagation();if(rows.length){hideSug();return;}const inp=$('#search-input');if(inp){inp.value='';paintMag();inp.blur();}return;}
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){if(!rows.length)return;e.preventDefault();sugIdx=(sugIdx+(e.key==='ArrowDown'?1:-1)+rows.length)%rows.length;rows.forEach((li,i)=>li.classList.toggle('on',i===sugIdx));return;}
   if(e.key==='Enter'&&sugIdx>0&&sugItems[sugIdx]){e.preventDefault();pickSug(sugItems[sugIdx].q);}
 });
