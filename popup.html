@@ -34,10 +34,6 @@
   @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.55)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
   .rnote{font-size:11px;color:#f87171;margin-top:6px;display:none}
   .rnote.show{display:block}
-  .probe{margin-top:8px;font-size:11px;line-height:1.75;color:#ddd;word-break:break-all}
-  .probe .pline b{color:rgba(255,255,255,.45);font-weight:600;margin-right:6px}
-  .probe .pline.good{color:#4ade80}
-  .probe .pline.bad{color:#f87171}
 </style>
 </head>
 <body>
@@ -51,11 +47,7 @@
   <h1><span class="dot" style="background:#ff0000"></span>Theater</h1>
   <div class="row"><span>Enable Theater</span><span class="rgroup"><button class="rbtn" id="pp-rt" title="Re-apply Theater to every YouTube tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></span></div>
   <div class="rnote" id="pp-rt-note">Theater state does not match this page. Reload the tab, or press refresh to re-apply.</div>
-  <hr style="border:none;border-top:1px solid rgba(255,255,255,.1);margin:14px 0 2px" />
-  <h1><span class="dot" style="background:#38bdf8"></span>Page state</h1>
-  <div class="row"><span>Active tab</span><span class="rgroup"><button class="rbtn" id="pp-probe" title="Probe the active tab and show what it paints"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button></span></div>
-  <div class="probe" id="pp-probe-out"><div class="pline">checking...</div></div>
 
-  <script src="js/popup.js?v=4"></script>
+  <script src="js/popup.js?v=5"></script>
 </body>
 </html>
