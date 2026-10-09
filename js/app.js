@@ -352,7 +352,8 @@ function applyVis(){WIDGETS.forEach(([k,,modal])=>{if(k==='news'){const nc=$('#n
 $('#search-form').onsubmit=e=>{e.preventDefault();const q=$('#search-input').value.trim();if(!q)return;saveSearchHist(q);hideSug();const url=/^https?:\/\//i.test(q)?q:(/^[^\s]+\.[a-z]{2,}(\/\S*)?$/i.test(q)?'https://'+q:'https://www.google.com/search?q='+encodeURIComponent(q));window.open(url,'_blank');$('#search-input').value='';$('#search-input').blur();};
 // Magnifier placeholder: an icon overlay cannot live in the placeholder
 // attribute, so it shows only while the input is empty and unfocused.
-function paintMag(){const inp=$('#search-input');if(!inp)return;$('#search-form').classList.toggle('mag-hide',document.activeElement===inp||!!inp.value);}
+function paintMag(){const inp=$('#search-input');if(!inp)return;const hide=document.activeElement===inp||!!inp.value;$('#search-form').classList.toggle('mag-hide',hide);$('#search-form').classList.toggle('search-idle',!hide);}
+$('#search-form').addEventListener('click',e=>{const inp=$('#search-input');if(inp&&document.activeElement!==inp)inp.focus();});
 $('#search-input').addEventListener('input',paintMag);
 $('#search-input').addEventListener('focus',paintMag);
 $('#search-input').addEventListener('blur',paintMag);
