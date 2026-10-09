@@ -4,9 +4,9 @@
 <meta charset="utf-8" />
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  html{background:transparent}
-  body{width:300px;padding:10px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:transparent;color:#fff}
-  .shell{background:#000;border-radius:22px;overflow:hidden;padding:16px 14px}
+  html{background:#101012}
+  body{width:300px;padding:12px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:linear-gradient(180deg,#26262b,#101012);color:#fff}
+  .shell{background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.1);border-radius:18px;overflow:hidden;padding:16px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
   h1.sec{font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin:16px 4px 8px}
   h1.sec:first-child{margin-top:2px}
   .card{background:#1c1c1e;border-radius:18px;padding:6px 14px 14px}
@@ -16,6 +16,9 @@
   .seg button{flex:1;border:none;background:transparent;color:rgba(255,255,255,.85);border-radius:9px;padding:8px 4px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
   .seg button.on{background:#636366;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .seg button.edit{box-shadow:0 0 0 2px #0a84ff}
+  #pp-mode button[data-m="dimmer"].on{background:#0a84ff}
+  #pp-mode button[data-m="reader"].on{background:#ff9f0a}
+  #pp-mode button[data-m="blur"].on{background:#bf5af2}
   .seg button.denied{background:rgba(255,69,58,.4)!important;color:#fff;transition:background .2s}
   .seg button:disabled{opacity:.35}
   input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:22px;margin:0;min-width:0}
