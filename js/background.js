@@ -370,7 +370,10 @@ function frostlineTheaterBoot(cfg){
         var sx0=document.getElementById('frostline-th-str');if(sx0){try{sx0.remove();}catch(_){}}
         var bar=visBar();
         if(!bar)return false;
-        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='16';b.title=title;b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
+        // No title attribute: YouTube renders its own pill from it, and ours
+        // duplicated it, so hovering showed two pills. Screen readers still
+        // get the aria-label below.
+        var mk=function(id,title,svg){var b=document.createElement('button');b.className='ytp-button frostline-th-btn';b.id=id;b.dataset.frostlineBv='16';b.setAttribute('aria-label',title);b.setAttribute('role','switch');b.setAttribute('aria-checked','false');b.innerHTML=svg;return b;};
         var svgW='<svg height="24" viewBox="0 0 24 24" width="24"><path d="M3 3h6v2H5v4H3V3zm18 0h-6v2h4v4h2V3zM3 21h6v-2H5v-4H3v6zm18 0h-6v-2h4v-4h2v6z" fill="white"/></svg>';
         var bw=mk('frostline-th-wfs','Windowed fullscreen (`)',svgW);
         bw.onclick=function(e){e.preventDefault();e.stopPropagation();wfs=!wfs;de.classList.toggle('frostline-th-wfs',wfs);rs();setTimeout(rs,300);paintB();save({wfs:wfs?1:0});};

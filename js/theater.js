@@ -160,11 +160,13 @@
       const bar = r.bar;
       if (!bar) return false;
       const mk = (id, title, svg) => {
+        // No title attribute: YouTube renders its own pill from it, and ours
+        // duplicated it, so hovering showed two pills. Screen readers still
+        // get the aria-label below.
         const b = document.createElement('button');
         b.className = 'ytp-button frostline-th-btn';
         b.id = id;
         b.dataset.frostlineBv = '16';
-        b.title = title;
         b.setAttribute('aria-label', title);
         b.setAttribute('role', 'switch');
         b.setAttribute('aria-checked', 'false');
