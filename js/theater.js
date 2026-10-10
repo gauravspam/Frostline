@@ -336,7 +336,7 @@
     } catch {}
   }
   function boot() {
-    try { document.documentElement.dataset.frostlineTh = '1.4.45'; } catch {}
+    try { document.documentElement.dataset.frostlineTh = '0.1'; } catch {}
     store(() => {
       if (!cfg.enabled) { cleanup(); return; }
       try { applyAll(); } catch {}
