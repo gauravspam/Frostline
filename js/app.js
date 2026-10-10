@@ -206,10 +206,23 @@ async function loadAQI(lat,lon){try{let box=$('#wx-aqi');if(!box){box=document.c
 function renderSkyArc(j,loc){const box=$('#wx-sun');if(!box)return;try{
     const rise=new Date(j.daily.sunrise[0]),set=new Date(j.daily.sunset[0]),now=new Date();
     if(!isFinite(rise)||!isFinite(set)||set<=rise)return;
-    const night=now<rise||now>set;
-    const f=Math.min(1,Math.max(0,(now-rise)/(set-rise)));
+    // Day: sun rides the arc. Night (after set, before next rise): a moon rides
+    // the same arc instead of the sun hanging at an endpoint.
+    let f,moon=false;
+    if(now>=rise&&now<=set){f=(now-rise)/(set-rise);}
+    else{
+      moon=true;
+      const afterSet=now>set;
+      const nset=afterSet?set:new Date(set.getTime()-864e5);
+      let nrise=afterSet?new Date(j.daily.sunrise[1]):rise;
+      if(!isFinite(nrise)||nrise<=nset){nrise=new Date(nset.getTime()+864e5);}
+      f=Math.min(1,Math.max(0,(now-nset)/(nrise-nset)));
+    }
     const sx=100-90*Math.cos(Math.PI*f),sy=100-90*Math.sin(Math.PI*f);
-    box.innerHTML=`<svg viewBox="0 0 200 116" width="220"><path d="M10,100 A90,90 0 0 1 190,100" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/><circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="9" fill="#fbbf24" opacity="${night?'0.35':'1'}"/></svg><div class="wx-riseset"><span>↑ ${wxFmtSun(j.daily.sunrise[0])}</span><span>↓ ${wxFmtSun(j.daily.sunset[0])}</span></div>`;
+    const dot=moon
+      ?`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="9" fill="#e8edf5"/>`
+      :`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="9" fill="#fbbf24"/>`;
+    box.innerHTML=`<svg viewBox="0 0 200 116" width="220"><path d="M10,100 A90,90 0 0 1 190,100" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/>${dot}</svg><div class="wx-riseset"><span>↑ ${wxFmtSun(j.daily.sunrise[0])}</span><span>↓ ${wxFmtSun(j.daily.sunset[0])}</span></div>`;
   }catch{}}
 async function loadWeather(){if(wxAbort)wxAbort.abort();wxAbort=new AbortController();const sig=wxAbort.signal;try{const loc=await wxResolve(wx.city||'Thane');if(sig.aborted)return;const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`,{signal:sig});const j=await r.json();const t=wxToU(j.current.temperature_2m),desc=wxDesc(j.current.weather_code);$('#w-weather').textContent=loc.name;$('#weather-big').textContent=`${t}°`;$('#weather-detail').textContent=`${desc} · H:${wxToU(j.daily.temperature_2m_max[0])}° L:${wxToU(j.daily.temperature_2m_min[0])}°`;const WX_SVG_H='<svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5">';
 const WX_ICONS={Clear:WX_SVG_H+'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>',Cloudy:WX_SVG_H+'<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',Foggy:WX_SVG_H+'<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',Rain:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M8 19v2M12 20v2M16 19v2"/></svg>',Snow:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M8 19v2M12 20v2M16 19v2"/></svg>',Storm:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M13 18l-2.5 4H13l-1 2.5"/></svg>'};
@@ -354,7 +367,11 @@ function applyVis(){WIDGETS.forEach(([k,,modal])=>{if(k==='news'){const nc=$('#n
 $('#search-form').onsubmit=e=>{e.preventDefault();const q=$('#search-input').value.trim();if(!q)return;saveSearchHist(q);hideSug();const url=/^https?:\/\//i.test(q)?q:(/^[^\s]+\.[a-z]{2,}(\/\S*)?$/i.test(q)?'https://'+q:'https://www.google.com/search?q='+encodeURIComponent(q));window.open(url,'_blank');$('#search-input').value='';$('#search-input').blur();};
 // Magnifier placeholder: an icon overlay cannot live in the placeholder
 // attribute, so it shows only while the input is empty and unfocused.
-function paintMag(){const inp=$('#search-input');if(!inp)return;const hide=document.activeElement===inp||!!inp.value;$('#search-form').classList.toggle('mag-hide',hide);$('#search-form').classList.toggle('search-idle',!hide);}
+function paintMag(){const inp=$('#search-input');if(!inp)return;const form=$('#search-form');const focused=document.activeElement===inp,hasV=!!inp.value;form.classList.toggle('mag-hide',focused||hasV);form.classList.toggle('search-idle',!focused&&!hasV);
+// Widths stay in pixels on every side so the expand/collapse always animates:
+// focused fills out, blurred-with-text shrink-wraps the text, empty collapses.
+if(focused){form.style.width='';}else if(hasV){form.style.width=fitSearchWidth(inp)+'px';}else{form.style.width='';}}
+function fitSearchWidth(inp){try{const cs=getComputedStyle(inp);const cv=fitSearchWidth.cv||(fitSearchWidth.cv=document.createElement('canvas').getContext('2d'));cv.font=cs.font;const w=cv.measureText(inp.value).width+64;return Math.min(420,Math.max(96,Math.round(w)));}catch{return 220;}}
 $('#search-form').addEventListener('click',e=>{const inp=$('#search-input');if(inp&&document.activeElement!==inp)inp.focus();});
 $('#search-input').addEventListener('input',paintMag);
 $('#search-input').addEventListener('focus',paintMag);
