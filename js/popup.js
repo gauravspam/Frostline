@@ -176,3 +176,4 @@ wireRefresh('pp-rdim', 'pp-rdim-note', 'shade-status', 'shade-reset');
 wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
 paintTheater();
+try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.runtime.getManifest().version;}catch{}
