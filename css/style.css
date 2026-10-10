@@ -155,9 +155,10 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 #github-modal,#github-modal #gh-readme{scrollbar-width:none}
 #github-modal::-webkit-scrollbar,#github-modal #gh-readme::-webkit-scrollbar{display:none}
 #gh-notif-sec{position:relative}
-.gh-top{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.08);cursor:pointer;display:none;place-items:center;padding:0;opacity:.65;transition:opacity .2s}
+.gh-top{position:absolute;right:10px;bottom:10px;width:34px;height:34px;border-radius:50%;border:none;background:rgba(255,255,255,.08);cursor:pointer;display:none;place-items:center;padding:0;opacity:0;transition:opacity .2s}
 .gh-top.show{display:grid}
-.gh-top.full{opacity:1}
+#gh-notif-sec:hover .gh-top.show{opacity:.65}
+#gh-notif-sec:hover .gh-top.show.full{opacity:.7}
 .gh-top svg{display:block}
 .gh-setup{display:flex;gap:8px;margin-top:12px}.gh-setup input{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;color:#fff}
 
