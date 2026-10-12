@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Frostline — Beautiful New Tab",
-  "version": "0.1",
+  "version": "0.2",
   "description": "A beautiful new tab with floating-glass widgets, focus tools, and daily inspiration. Includes Shade and YouTube windowed fullscreen.",
   "icons": {
     "16": "assets/icon16.png",
@@ -20,6 +20,11 @@
     {
       "matches": ["*://youtube.com/*", "*://*.youtube.com/*", "*://youtu.be/*"],
       "js": ["js/theater.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://youtube.com/*", "*://*.youtube.com/*", "*://youtu.be/*"],
+      "js": ["js/video-fx.js"],
       "run_at": "document_idle"
     }
   ],
