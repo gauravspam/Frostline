@@ -196,7 +196,7 @@
         // media-scope brightness will REPLACE it (not layer), but the canvas
         // also carries mix-blend-mode: screen which blends the blurred result
         // with the video. Opacity controls intensity.
-        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 1.2 + 'px);mix-blend-mode:screen;opacity:0.35';
+        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 1.2 + 'px);mix-blend-mode:screen;opacity:0.6';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;

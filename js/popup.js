@@ -47,7 +47,11 @@ function paint() {
   if (t) t.classList.toggle('on', !!dim.enabled);
   const r = document.querySelector('#pp-intensity');
   dimEnsureShapeP();
-  if (r && document.activeElement !== r) r.value = dim.vals[dim.edit];
+  if (r && document.activeElement !== r) {
+    r.value = dim.vals[dim.edit];
+    // Blue fill gradient matching the thumb position
+    r.style.background = 'linear-gradient(#0a84ff,#0a84ff) 0 50%/' + dim.vals[dim.edit] + '% 2px no-repeat,rgba(120,120,128,.3) 0 50%/100% 2px no-repeat';
+  }
   const v = document.querySelector('#pp-val');
   const isPreview = dim.edit !== dim.mode;
   if (v) v.textContent = dim.vals[dim.edit] + '% - ' + (dim.edit === 'dimmer' ? 'dim' : dim.edit) + (isPreview ? ' (preview)' : '');
@@ -68,6 +72,8 @@ document.querySelector('#pp-intensity').oninput = e => {
   dim.mode = dim.edit;
   // 0 is a valid "off" value; anything above 0 arms the effect.
   dim.fx[dim.edit] = (+e.target.value > 0) ? 1 : 0;
+  const pct = e.target.value;
+  e.target.style.background = 'linear-gradient(#0a84ff,#0a84ff) 0 50%/' + pct + '% 2px no-repeat,rgba(120,120,128,.3) 0 50%/100% 2px no-repeat';
   saveDim();
   paint();
 };
@@ -201,7 +207,12 @@ function paintExp(){
   const vt = document.querySelector('#pp-vol-toggle');
   if (vt) vt.classList.toggle('on', !!exp.volume);
   const g = document.querySelector('#pp-vol-gain');
-  if (g && document.activeElement !== g) g.value = exp.volGain;
+  if (g && document.activeElement !== g) {
+    g.value = exp.volGain;
+    // Update fill gradient: 100->0%, 300->100%
+    const pct = Math.round((exp.volGain - 100) / 2);
+    g.style.background = 'linear-gradient(#0a84ff,#0a84ff) 0 50%/' + pct + '% 2px no-repeat,rgba(120,120,128,.3) 0 50%/100% 2px no-repeat';
+  }
   const gv = document.querySelector('#pp-vol-val');
   if (gv) gv.textContent = exp.volGain + '%';
   if (gv) gv.classList.toggle('preview', exp.volGain > 200);
@@ -214,7 +225,13 @@ function paintExp(){
 }
 document.querySelector('#exp-head').onclick = () => { exp.expOpen = exp.expOpen ? 0 : 1; saveExp(); paintExp(); };
 document.querySelector('#pp-vol-toggle').onclick = () => { exp.volume = exp.volume ? 0 : 1; saveExp(); paintExp(); };
-document.querySelector('#pp-vol-gain').oninput = e => { exp.volGain = +e.target.value; saveExp(); paintExp(); };
+document.querySelector('#pp-vol-gain').oninput = e => { 
+  exp.volGain = +e.target.value; 
+  const pct = Math.round((exp.volGain - 100) / 2);
+  e.target.style.background = 'linear-gradient(#0a84ff,#0a84ff) 0 50%/' + pct + '% 2px no-repeat,rgba(120,120,128,.3) 0 50%/100% 2px no-repeat';
+  saveExp(); 
+  paintExp(); 
+};
 document.querySelector('#pp-amb-toggle').onclick = () => { exp.ambient = exp.ambient ? 0 : 1; saveExp(); paintExp(); };
 try {
   chrome.storage.onChanged.addListener((ch, area) => {
