@@ -22,11 +22,17 @@
   #pp-mode button[data-m="blur"].on{background:#bf5af2}
   .seg button.denied{background:rgba(255,69,58,.4)!important;color:#fff;transition:background .2s}
   .seg button:disabled{opacity:.35}
-  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:22px;margin:0;min-width:0}
+  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:28px;margin:0;min-width:0}
   input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(120,120,128,.35)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;margin-top:-7px;box-shadow:0 1px 5px rgba(0,0,0,.5);cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;margin-top:-8px;box-shadow:0 2px 8px rgba(0,0,0,.4),0 0 0 2px rgba(255,255,255,.1);cursor:pointer;transition:transform .1s ease,box-shadow .1s ease}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.15);box-shadow:0 3px 12px rgba(0,0,0,.5),0 0 0 3px rgba(255,255,255,.15)}
+  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.3);box-shadow:0 4px 16px rgba(0,0,0,.6),0 0 0 4px rgba(255,255,255,.2)}
   input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(120,120,128,.35)}
-  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:#fff;cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:#0a84ff}
+  /* Apple-style fill on the track via background gradient */
+  input[type=range]{background:linear-gradient(#0a84ff,#0a84ff) 0 50%/0 4px no-repeat,rgba(120,120,128,.35) 0 50%/100% 4px no-repeat}
+  input[type=range]::-webkit-slider-runnable-track{background:transparent}
   .val{min-width:44px;text-align:right;font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
   .val.preview{color:#0a84ff}
   .hint{font-size:11px;color:rgba(255,255,255,.4);margin-top:10px}

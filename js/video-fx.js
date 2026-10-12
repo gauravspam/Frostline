@@ -178,7 +178,7 @@
         // width/height 100% is required on BOTH elements: an absolutely
         // positioned replaced element keeps its intrinsic 64x36 box under
         // inset:0 alone.
-        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:blur(' + AMB_BLUR * 1.2 + 'px)';
+        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:blur(' + AMB_BLUR * 1.2 + 'px);z-index:0';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
@@ -192,6 +192,12 @@
         amb.canvas = c;
         // The wrapper is what gets inserted; the canvas is its only child.
         p.insertBefore(w, p.firstChild);
+        // Make video background transparent so the glow shows in letterbox areas.
+        const v = ambVideo();
+        if (v) {
+          v.style.backgroundColor = 'transparent';
+          amb._hadVideoBg = true;
+        }
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
       if (!amb.ctx) {
@@ -208,6 +214,12 @@
   function ambTeardown() {
     try { ambStop(); } catch {}
     const w = amb.wrap;
+    // Restore video background if we made it transparent.
+    if (amb._hadVideoBg) {
+      const v = ambVideo();
+      if (v) v.style.backgroundColor = '';
+      amb._hadVideoBg = false;
+    }
     amb.wrap = null;
     amb.canvas = null;
     amb.ctx = null;
