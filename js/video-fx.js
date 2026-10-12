@@ -125,6 +125,10 @@
   // SPA carried away; paint rate itself is still rVFC or the 100ms interval.
   function ambWatch() {
     try {
+      // Browse pages get no backdrop, so a watch-to-home SPA hop tears down
+      // here instead of waiting for the player to be rebuilt. Mirrors the
+      // theater.js applyAll/cleanup split.
+      if (!isWatchPage()) { ambTeardown(); return; }
       if (amb.dead || !cfg.ambient || nativeFs()) return;
       const p = ambPlayer();
       if (!p) return;
@@ -142,10 +146,16 @@
       if (!amb.wrap.isConnected || !ambPlayer() || nativeFs()) { ambApply(); return; }
       const v = ambVideo();
       if (!v) return;
+      // A null context or an element with no decoded frame would throw inside
+      // drawImage on every tick, so bail before touching the throttle stamp.
+      if (!amb.ctx) return;
+      if (!v.videoWidth || !v.videoHeight) return;
       const now = Date.now();
       if (now - amb.last < 100) return;
-      amb.last = now;
       amb.ctx.drawImage(v, 0, 0, 64, 36);
+      // Stamp only after a successful draw: a failed frame must not consume
+      // the next frame's budget or a frozen glow masks itself as working.
+      amb.last = now;
     } catch {}
   }
   function ambEnsure() {
@@ -208,6 +218,9 @@
   }
   function ambApply() {
     try {
+      // Preview players on browse pages must stay untouched, same rule as
+      // theater.js applyAll: gate here so enables elsewhere cannot paint.
+      if (!isWatchPage()) { ambTeardown(); return; }
       if (cfg.ambient && !nativeFs()) {
         ambEnsure();
         // The watchdog outlives individual canvases so a page the SPA swapped
@@ -228,10 +241,26 @@
   function volArm() {
     if (audio.gestured || audio.dead) return;
     const go = () => {
+      // No video yet means nothing to wire. The click still counts as the
+      // unlock, so record it and keep the listeners: the watchdog builds once
+      // the player arrives, and a later click retries directly.
+      try {
+        const nov = document.querySelector('#movie_player video') || document.querySelector('video');
+        if (!nov || !nov.isConnected) {
+          audio.gestured = true;
+          if (!audio.watch) { try { audio.watch = setInterval(volWatch, 500); } catch {} }
+          return;
+        }
+      } catch {}
       audio.gestured = true;
       document.removeEventListener('pointerdown', go, true);
       document.removeEventListener('keydown', go, true);
-      try { volAttach(); } catch {}
+      // Run even with volume off: a toggle after this click builds through
+      // the watchdog with no second click, and costs one cheap poll.
+      if (!audio.watch) { try { audio.watch = setInterval(volWatch, 500); } catch {} }
+      // Build only for users who opted in, so everyone else keeps bit-identical
+      // audio with no context, no source node, and no compressor in the path.
+      try { if (cfg.volume) volAttach(); } catch {}
     };
     document.addEventListener('pointerdown', go, true);
     document.addEventListener('keydown', go, true);
@@ -245,14 +274,23 @@
   // routed MediaElementSource stays quiet while its context is suspended.
   function volWatch() {
     try {
-      if (!audio.gestured || audio.dead || !audio.ctx) return;
+      if (!isWatchPage()) return;
+      if (!audio.gestured || audio.dead) return;
+      // Volume off means no graph, so toggling on later is the only path here.
+      if (!cfg.volume) return;
       const v = document.querySelector('#movie_player video') || document.querySelector('video');
-      if (v && !audio.gains.has(v)) volAttach();
+      if (!v || !v.isConnected) return;
+      // Runs with ctx null on purpose: a toggle after the gesture, or a player
+      // that arrived late, builds here with no second click, and a suspended
+      // context gets its resume retried on the same tick.
+      if (!audio.ctx || !audio.gains.has(v)) volAttach();
     } catch {}
   }
   // The compressor is the limiter. Without it, gain above 1 hard-clips at the
   // destination and louder comes out as distortion instead of volume.
   function volAttach() {
+    // Preview players on browse pages must never be routed through a graph.
+    if (!isWatchPage()) return;
     const v = document.querySelector('#movie_player video') || document.querySelector('video');
     if (!v) return;
     if (!audio.ctx) {
@@ -283,7 +321,9 @@
       gain = audio.ctx.createGain();
     } catch (e) { return; }
     src.connect(gain);
-    gain.connect(audio.limiter);
+    // No limiter edge here: volApply owns the single connect per gain node,
+    // so re-attaching the same element cannot stack a second edge and play
+    // the level ~6dB hot. volApply below runs next and wires it exactly once.
     audio.gains.set(v, gain);
     volApply();
   }
@@ -298,10 +338,20 @@
   // because a stale edge would keep the old video playing through the graph.
   function volApply() {
     try {
-      if (!audio.ctx || !audio.limiter) return;
+      if (!isWatchPage()) return;
+      if (!audio.ctx || !audio.limiter) {
+        // The toggle can land after the gesture: build now instead of waiting
+        // for another click. Never before a gesture, or the routed source
+        // would sit silent on a suspended context.
+        if (cfg.volume && audio.gestured) volAttach();
+        return;
+      }
       const v = document.querySelector('#movie_player video') || document.querySelector('video');
       if (!v) return;
-      if (!audio.gains.has(v)) { volAttach(); return; }
+      if (!audio.gains.has(v)) {
+        if (cfg.volume && audio.gestured) { volAttach(); return; }
+        return;
+      }
       const g = audio.gains.get(v);
       if (!g) return;
       if (volWired !== g) {
