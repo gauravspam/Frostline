@@ -40,17 +40,6 @@
     } catch {}
     return false;
   }
-  function vidOf() {
-    try {
-      const u = new URL(location.href);
-      if (u.hostname.indexOf('youtube.com') >= 0) {
-        if (u.pathname === '/watch') return u.searchParams.get('v') || '';
-        if (u.pathname.indexOf('/shorts/') === 0) return u.pathname.split('/')[2] || '';
-      }
-      if (u.hostname === 'youtu.be') return u.pathname.replace(/^\//, '').split('/')[0] || '';
-    } catch {}
-    return '';
-  }
   function saveCfg(patch) {
     const next = Object.assign({}, cfg, patch || {});
     next.volGain = clampGain(next.volGain);
