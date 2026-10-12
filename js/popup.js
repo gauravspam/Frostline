@@ -177,3 +177,51 @@ wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
 paintTheater();
 try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.runtime.getManifest().version;}catch{}
+// ---- Experimental Features: volume boost + ambient light ----
+// The content script reacts to chrome.storage writes; localStorage here is
+// only for synchronous first paint, matching dim/th.
+let exp = Object.assign({ volume: 0, volGain: 100, ambient: 0, expOpen: 0 }, store.get('expCfg', {}));
+function expEnsureShape(){
+  exp.volume = exp.volume ? 1 : 0;
+  exp.ambient = exp.ambient ? 1 : 0;
+  exp.expOpen = exp.expOpen ? 1 : 0;
+  const n = typeof exp.volGain === 'number' && isFinite(exp.volGain) ? Math.round(exp.volGain) : 100;
+  exp.volGain = Math.min(300, Math.max(100, n));
+}
+expEnsureShape();
+function saveExp(){
+  expEnsureShape();
+  const clean = { volume: exp.volume ? 1 : 0, volGain: exp.volGain, ambient: exp.ambient ? 1 : 0, expOpen: exp.expOpen ? 1 : 0 };
+  exp = clean;
+  store.set('expCfg', clean);
+  try { chrome.storage.local.set({ frostline_expCfg: clean }); } catch {}
+}
+function paintExp(){
+  expEnsureShape();
+  const vt = document.querySelector('#pp-vol-toggle');
+  if (vt) vt.classList.toggle('on', !!exp.volume);
+  const g = document.querySelector('#pp-vol-gain');
+  if (g && document.activeElement !== g) g.value = exp.volGain;
+  const gv = document.querySelector('#pp-vol-val');
+  if (gv) gv.textContent = exp.volGain + '%';
+  if (gv) gv.classList.toggle('preview', exp.volGain > 200);
+  const at = document.querySelector('#pp-amb-toggle');
+  if (at) at.classList.toggle('on', !!exp.ambient);
+  const head = document.querySelector('#exp-head');
+  if (head) head.classList.toggle('open', !!exp.expOpen);
+  const body = document.querySelector('#exp-body');
+  if (body) body.classList.toggle('open', !!exp.expOpen);
+}
+document.querySelector('#exp-head').onclick = () => { exp.expOpen = exp.expOpen ? 0 : 1; saveExp(); paintExp(); };
+document.querySelector('#pp-vol-toggle').onclick = () => { exp.volume = exp.volume ? 0 : 1; saveExp(); paintExp(); };
+document.querySelector('#pp-vol-gain').oninput = e => { exp.volGain = +e.target.value; saveExp(); paintExp(); };
+document.querySelector('#pp-amb-toggle').onclick = () => { exp.ambient = exp.ambient ? 0 : 1; saveExp(); paintExp(); };
+try {
+  chrome.storage.onChanged.addListener((ch, area) => {
+    if (area === 'local' && ch.frostline_expCfg && ch.frostline_expCfg.newValue) {
+      exp = Object.assign(exp, ch.frostline_expCfg.newValue);
+      paintExp();
+    }
+  });
+} catch {}
+paintExp();
