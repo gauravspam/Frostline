@@ -188,20 +188,21 @@
         c.id = AMB_ID;
         c.width = 64;
         c.height = 36;
-        // The scale is on the canvas, not the wrapper: it is overscan that
-        // hides the canvas edge and it must scale the pixels. Scaling the
-        // wrapper would scale the blur radius with it and double the smear.
-        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ')';
+        // The scale and blur are on the canvas. Blur here means Shade's
+        // media-scope brightness will REPLACE it (not layer), but the canvas
+        // also carries mix-blend-mode: screen which blends the blurred result
+        // with the video. Opacity controls intensity.
+        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 1.2 + 'px);mix-blend-mode:screen;opacity:0.35';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
         // The wrapper goes on TOP of the video (last child) so the glow appears
-        // on the black letterbox bars. mix-blend-mode: screen makes the color
-        // visible on black (screen(black, color) = color) while adding only a
-        // subtle tint to the video content. Opacity controls intensity.
+        // on the black letterbox bars. Wrapper is neutral (no filter, no blend)
+        // so the canvas can blend directly with the video behind it.
         p.appendChild(w);
-        w.style.opacity = '0.35';
-        w.style.mixBlendMode = 'screen';
+        // Canvas: blur + scale + screen blend + opacity for intensity.
+        // Blur on canvas means Shade's media-scope brightness will REPLACE it,
+        // but the screen blend persists. Opacity controls intensity.
         // Make video AND its container background transparent so the glow shows
         // in letterbox areas. YouTube's .html5-video-container often has a bg.
         const v = ambVideo();
