@@ -183,7 +183,7 @@
         // width/height 100% is required on BOTH elements: an absolutely
         // positioned replaced element keeps its intrinsic 64x36 box under
         // inset:0 alone.
-        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:blur(' + AMB_BLUR * 1.2 + 'px);z-index:0';
+        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:blur(' + AMB_BLUR * 1.2 + 'px)';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
@@ -195,8 +195,13 @@
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
-        // The wrapper is what gets inserted; the canvas is its only child.
-        p.insertBefore(w, p.firstChild);
+        // The wrapper goes on TOP of the video (last child) so the glow appears
+        // on the black letterbox bars. mix-blend-mode: screen makes the color
+        // visible on black (screen(black, color) = color) while adding only a
+        // subtle tint to the video content. Opacity controls intensity.
+        p.appendChild(w);
+        w.style.opacity = '0.35';
+        w.style.mixBlendMode = 'screen';
         // Make video AND its container background transparent so the glow shows
         // in letterbox areas. YouTube's .html5-video-container often has a bg.
         const v = ambVideo();
@@ -211,10 +216,10 @@
         }
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
-      // Fallback: paint a neutral color so the glow is visible immediately
+      // Fallback: paint a visible color so the glow is visible immediately
       // before the first video frame is captured, or if drawImage fails.
       if (amb.ctx) {
-        amb.ctx.fillStyle = '#1a1a2e';
+        amb.ctx.fillStyle = '#0a84ff';
         amb.ctx.fillRect(0, 0, 64, 36);
       }
       if (!amb.ctx) {
