@@ -77,7 +77,7 @@
   };
   function ambPlayer() {
     try {
-      const p = document.querySelector('.html5-video-player');
+      const p = document.getElementById('movie_player');
       if (p && p.isConnected) return p;
     } catch {}
     return null;
@@ -187,7 +187,7 @@
         // width/height 100% is required on BOTH elements: an absolutely
         // positioned replaced element keeps its intrinsic 64x36 box under
         // inset:0 alone.
-        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
+        w.style.cssText = 'position:absolute;inset:-35px;width:calc(100% + 70px);height:calc(100% + 70px);pointer-events:none';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
@@ -196,16 +196,19 @@
         // media-scope brightness will REPLACE it (not layer), but the canvas
         // also carries mix-blend-mode: screen which blends the blurred result
         // with the video. Opacity controls intensity.
-        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 1.2 + 'px);mix-blend-mode:screen;opacity:0.6';
+        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 2.4 + 'px);mix-blend-mode:screen;opacity:0.6';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
-        // The wrapper goes on TOP of the video (last child) so the glow appears
-        // on the black letterbox bars. Wrapper is NEUTRAL (no filter, no blend,
-        // no opacity) so the canvas can blend directly with the video behind it.
-        // NO filter on wrapper: it would create a stacking context and isolate
-        // mix-blend-mode from the video.
-        p.appendChild(w);
+        // The wrapper goes INSIDE #movie_player but BEHIND the video container
+        // (firstChild, not lastChild) so the glow peeks out from behind the
+        // player edges via the negative inset. #movie_player does not clip,
+        // unlike .html5-video-player which has overflow:hidden.
+        p.insertBefore(w, p.firstChild);
+        // Make the player itself transparent so the glow shows through to
+        // the page background behind it. Without this, the player's own
+        // background blocks the canvas.
+        p.style.backgroundColor = 'transparent';
         // Canvas: blur + scale + screen blend + opacity for intensity.
         // Blur on canvas means Shade's media-scope brightness will REPLACE it,
         // but the screen blend persists. Opacity controls intensity.
