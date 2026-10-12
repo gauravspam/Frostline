@@ -175,8 +175,10 @@
         // Two elements, one job each. Shade's media rule targets `canvas` with
         // !important brightness, and CSS filter does not compose across rules,
         // so a blur on the canvas itself would be REPLACED (not layered) the
-        // moment Shade turns on. The wrapper carries the blur because Shade
-        // never matches a div; the canvas carries only the overscan scale.
+        // moment Shade turns on. Blur and scale are on the canvas (no wrapper
+        // filter) so the canvas can blend directly with the video behind it via
+        // mix-blend-mode: screen. A wrapper filter would create a stacking
+        // context and isolate the blend.
         const w = document.createElement('div');
         w.id = AMB_WRAP_ID;
         // Inline cssText, not a <style> element: the page CSP blocks styles a
@@ -185,7 +187,7 @@
         // width/height 100% is required on BOTH elements: an absolutely
         // positioned replaced element keeps its intrinsic 64x36 box under
         // inset:0 alone.
-        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:blur(' + AMB_BLUR * 1.2 + 'px)';
+        w.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
@@ -199,8 +201,10 @@
         amb.wrap = w;
         amb.canvas = c;
         // The wrapper goes on TOP of the video (last child) so the glow appears
-        // on the black letterbox bars. Wrapper is neutral (no filter, no blend)
-        // so the canvas can blend directly with the video behind it.
+        // on the black letterbox bars. Wrapper is NEUTRAL (no filter, no blend,
+        // no opacity) so the canvas can blend directly with the video behind it.
+        // NO filter on wrapper: it would create a stacking context and isolate
+        // mix-blend-mode from the video.
         p.appendChild(w);
         // Canvas: blur + scale + screen blend + opacity for intensity.
         // Blur on canvas means Shade's media-scope brightness will REPLACE it,
