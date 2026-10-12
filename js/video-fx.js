@@ -192,11 +192,17 @@
         amb.canvas = c;
         // The wrapper is what gets inserted; the canvas is its only child.
         p.insertBefore(w, p.firstChild);
-        // Make video background transparent so the glow shows in letterbox areas.
+        // Make video AND its container background transparent so the glow shows
+        // in letterbox areas. YouTube's .html5-video-container often has a bg.
         const v = ambVideo();
         if (v) {
           v.style.backgroundColor = 'transparent';
           amb._hadVideoBg = true;
+        }
+        const vc = p.querySelector('.html5-video-container');
+        if (vc) {
+          vc.style.backgroundColor = 'transparent';
+          amb._hadContainerBg = true;
         }
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
@@ -219,6 +225,15 @@
       const v = ambVideo();
       if (v) v.style.backgroundColor = '';
       amb._hadVideoBg = false;
+    }
+    // Restore container background.
+    if (amb._hadContainerBg) {
+      const p = ambPlayer();
+      if (p) {
+        const vc = p.querySelector('.html5-video-container');
+        if (vc) vc.style.backgroundColor = '';
+      }
+      amb._hadContainerBg = false;
     }
     amb.wrap = null;
     amb.canvas = null;
