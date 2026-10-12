@@ -12,7 +12,7 @@
     return Math.min(300, Math.max(100, n));
   };
   let cfg = Object.assign({}, DEF);
-  const audio = { ctx: null, limiter: null, gains: new WeakMap(), gestured: false, dead: false };
+  const audio = { ctx: null, limiter: null, gains: new WeakMap(), gestured: false, dead: false, watch: 0 };
   function loadCfg(cb) {
     try {
       chrome.storage.local.get(KEY, (o) => {
@@ -236,6 +236,20 @@
     document.addEventListener('pointerdown', go, true);
     document.addEventListener('keydown', go, true);
   }
+  // YouTube SPA swaps the video element without a config write, so boost
+  // would stay wired to a detached node and silently stop on video 2. The
+  // watchdog re-attaches the fresh element with no user action, mirroring
+  // the ambient 500ms watchdog pattern and interval.
+  // Gated on gestured so a context is never built before a real user gesture.
+  // Building early would leave it suspended and silence the video, because a
+  // routed MediaElementSource stays quiet while its context is suspended.
+  function volWatch() {
+    try {
+      if (!audio.gestured || audio.dead || !audio.ctx) return;
+      const v = document.querySelector('#movie_player video') || document.querySelector('video');
+      if (v && !audio.gains.has(v)) volAttach();
+    } catch {}
+  }
   // The compressor is the limiter. Without it, gain above 1 hard-clips at the
   // destination and louder comes out as distortion instead of volume.
   function volAttach() {
@@ -243,7 +257,12 @@
     if (!v) return;
     if (!audio.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) { audio.dead = true; return; }
+      if (!AC) {
+        // Permanent failure, so drop the watchdog alongside the graph handles.
+        audio.dead = true;
+        if (audio.watch) { clearInterval(audio.watch); audio.watch = 0; }
+        return;
+      }
       audio.ctx = new AC();
       audio.limiter = audio.ctx.createDynamicsCompressor();
       audio.limiter.threshold.value = -3;
@@ -254,6 +273,9 @@
       audio.limiter.connect(audio.ctx.destination);
     }
     if (audio.ctx.state === 'suspended') { try { audio.ctx.resume(); } catch {} }
+    // Start once the graph exists so the watchdog never builds a context on
+    // its own. Single instance guard matches amb.watch, so only one runs.
+    if (!audio.watch) audio.watch = setInterval(volWatch, 500);
     if (audio.gains.has(v)) { volApply(); return; }
     let src, gain;
     try {
