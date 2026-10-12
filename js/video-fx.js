@@ -152,7 +152,12 @@
       if (!v.videoWidth || !v.videoHeight) return;
       const now = Date.now();
       if (now - amb.last < 100) return;
-      amb.ctx.drawImage(v, 0, 0, 64, 36);
+      // Sample the center 80% of the frame to avoid encoded letterbox bars.
+      const sx = v.videoWidth * 0.1;
+      const sy = v.videoHeight * 0.1;
+      const sw = v.videoWidth * 0.8;
+      const sh = v.videoHeight * 0.8;
+      amb.ctx.drawImage(v, sx, sy, sw, sh, 0, 0, 64, 36);
       // Stamp only after a successful draw: a failed frame must not consume
       // the next frame's budget or a frozen glow masks itself as working.
       amb.last = now;
@@ -206,6 +211,12 @@
         }
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
+      // Fallback: paint a neutral color so the glow is visible immediately
+      // before the first video frame is captured, or if drawImage fails.
+      if (amb.ctx) {
+        amb.ctx.fillStyle = '#1a1a2e';
+        amb.ctx.fillRect(0, 0, 64, 36);
+      }
       if (!amb.ctx) {
         // A null 2d context is permanent for this document: disarm so the
         // storage listener cannot fall into a retry loop on every video.
