@@ -220,8 +220,76 @@
     document.addEventListener('fullscreenchange', ambApply);
     document.addEventListener('webkitfullscreenchange', ambApply);
   } catch {}
-  // No behavior yet; the storage path is settled here so feature code only replaces this body.
-  function volApply() {}
+  // A click in the toolbar popup is not a gesture in this document, so this
+  // listener is the only thing that can ever unlock the AudioContext here.
+  // Installed at boot whatever cfg says: volArm refuses to run once the first
+  // gesture has passed, so waiting for the toggle to arm it would lose the
+  // unlock entirely for users who touch the page before opening the popup.
+  function volArm() {
+    if (audio.gestured || audio.dead) return;
+    const go = () => {
+      audio.gestured = true;
+      document.removeEventListener('pointerdown', go, true);
+      document.removeEventListener('keydown', go, true);
+      try { volAttach(); } catch {}
+    };
+    document.addEventListener('pointerdown', go, true);
+    document.addEventListener('keydown', go, true);
+  }
+  // The compressor is the limiter. Without it, gain above 1 hard-clips at the
+  // destination and louder comes out as distortion instead of volume.
+  function volAttach() {
+    const v = document.querySelector('#movie_player video') || document.querySelector('video');
+    if (!v) return;
+    if (!audio.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { audio.dead = true; return; }
+      audio.ctx = new AC();
+      audio.limiter = audio.ctx.createDynamicsCompressor();
+      audio.limiter.threshold.value = -3;
+      audio.limiter.knee.value = 0;
+      audio.limiter.ratio.value = 20;
+      audio.limiter.attack.value = 0.003;
+      audio.limiter.release.value = 0.25;
+      audio.limiter.connect(audio.ctx.destination);
+    }
+    if (audio.ctx.state === 'suspended') { try { audio.ctx.resume(); } catch {} }
+    if (audio.gains.has(v)) { volApply(); return; }
+    let src, gain;
+    try {
+      src = audio.ctx.createMediaElementSource(v);
+      gain = audio.ctx.createGain();
+    } catch (e) { return; }
+    src.connect(gain);
+    gain.connect(audio.limiter);
+    audio.gains.set(v, gain);
+    volApply();
+  }
+  // The gain node currently feeding the limiter. A WeakMap cannot be
+  // enumerated, so the live edge is tracked here to know what to unhook when
+  // the SPA swaps the video element.
+  let volWired = null;
+  // Off means gain exactly 1, never 0 and never a disconnect:
+  // createMediaElementSource works once per element for the life of the
+  // document, so the wiring has to outlive every toggle. An element the SPA
+  // replaced gets one legal disconnect here (gain nodes are unrestricted),
+  // because a stale edge would keep the old video playing through the graph.
+  function volApply() {
+    try {
+      if (!audio.ctx || !audio.limiter) return;
+      const v = document.querySelector('#movie_player video') || document.querySelector('video');
+      if (!v) return;
+      if (!audio.gains.has(v)) { volAttach(); return; }
+      const g = audio.gains.get(v);
+      if (!g) return;
+      if (volWired !== g) {
+        if (volWired) { try { volWired.disconnect(audio.limiter); } catch {} }
+        try { g.connect(audio.limiter); } catch {}
+        volWired = g;
+      }
+      g.gain.value = cfg.volume ? cfg.volGain / 100 : 1;
+    } catch {}
+  }
   function refresh() {
     loadCfg(() => {
       try { ambApply(); } catch {}
@@ -236,4 +304,5 @@
     });
   } catch {}
   refresh();
+  volArm();
 })();
