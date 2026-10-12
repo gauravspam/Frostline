@@ -134,6 +134,7 @@
       if (!p) return;
       if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== p) { ambApply(); return; }
       if (!amb.vfc && !amb.timer) ambArm();
+      try { console.log('[Frostline Ambient] Watchdog tick, wrap connected:', amb.wrap?.isConnected, 'cfg.ambient:', cfg.ambient); } catch {}
     } catch {}
   }
   // The backdrop lives inside the player, so an SPA navigation that swaps the
@@ -161,6 +162,7 @@
       // Stamp only after a successful draw: a failed frame must not consume
       // the next frame's budget or a frozen glow masks itself as working.
       amb.last = now;
+      try { console.log('[Frostline Ambient] Tick drawn, wrap connected:', amb.wrap.isConnected, 'style:', amb.wrap.style.cssText); } catch {}
     } catch {}
   }
   function ambEnsure() {
@@ -215,6 +217,8 @@
           vc.style.backgroundColor = 'transparent';
           amb._hadContainerBg = true;
         }
+        // DEBUG: log creation
+        try { console.log('[Frostline Ambient] Created wrap:', w, 'canvas:', c, 'video:', v, 'container:', vc); } catch {}
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
       // Fallback: paint a visible color so the glow is visible immediately
@@ -222,6 +226,7 @@
       if (amb.ctx) {
         amb.ctx.fillStyle = '#0a84ff';
         amb.ctx.fillRect(0, 0, 64, 36);
+        try { console.log('[Frostline Ambient] Fallback painted'); } catch {}
       }
       if (!amb.ctx) {
         // A null 2d context is permanent for this document: disarm so the
@@ -265,11 +270,15 @@
       // Preview players on browse pages must stay untouched, same rule as
       // theater.js applyAll: gate here so enables elsewhere cannot paint.
       if (!isWatchPage()) { ambTeardown(); return; }
+      try { console.log('[Frostline Ambient] ambApply called, cfg.ambient:', cfg.ambient, 'nativeFs:', nativeFs(), 'isWatchPage:', isWatchPage()); } catch {}
       if (cfg.ambient && !nativeFs()) {
         ambEnsure();
         // The watchdog outlives individual canvases so a page the SPA swapped
         // out and back still gets the backdrop re-attached with no user action.
-        if (!amb.dead && !amb.watch) amb.watch = setInterval(ambWatch, 500);
+        if (!amb.dead && !amb.watch) {
+          amb.watch = setInterval(ambWatch, 500);
+          try { console.log('[Frostline Ambient] Watchdog started'); } catch {}
+        }
       } else ambTeardown();
     } catch {}
   }
