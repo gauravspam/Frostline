@@ -132,7 +132,8 @@
       if (amb.dead || !cfg.ambient || nativeFs()) return;
       const p = ambPlayer();
       if (!p) return;
-      if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== p) { ambApply(); return; }
+      if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== document.body) { ambApply(); return; }
+      ambSyncRect();
       if (!amb.vfc && !amb.timer) ambArm();
       try { console.log('[Frostline Ambient] Watchdog tick, wrap connected:', amb.wrap?.isConnected, 'cfg.ambient:', cfg.ambient); } catch {}
     } catch {}
@@ -145,6 +146,10 @@
     try {
       if (amb.dead || !amb.wrap) return;
       if (!amb.wrap.isConnected || !ambPlayer() || nativeFs()) { ambApply(); return; }
+      // Keep the overlay glued to the player across scroll, resize and SPA
+      // layout shifts. Runs ahead of the draw so a moved player never shows
+      // one stale frame in the wrong place.
+      ambSyncRect();
       const v = ambVideo();
       if (!v) return;
       // A null context or an element with no decoded frame would throw inside
@@ -165,67 +170,67 @@
       try { console.log('[Frostline Ambient] Tick drawn, video:', v.videoWidth+'x'+v.videoHeight, 'wrap:', amb.wrap.isConnected); } catch {}
     } catch {}
   }
+  // Bleed margin around the player so the glow spills onto the page.
+  const AMB_BLEED = 60;
+  // Sync the body-level wrapper to the player's viewport rect. Cheap string
+  // compare avoids layout thrash when nothing moved.
+  function ambSyncRect() {
+    try {
+      const p = ambPlayer();
+      if (!p || !amb.wrap) return;
+      const r = p.getBoundingClientRect();
+      if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; return; }
+      const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
+      if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
+      amb._rect = key;
+      amb.wrap.style.display = '';
+      amb.wrap.style.left = Math.round(r.left - AMB_BLEED) + 'px';
+      amb.wrap.style.top = Math.round(r.top - AMB_BLEED) + 'px';
+      amb.wrap.style.width = Math.round(r.width + AMB_BLEED * 2) + 'px';
+      amb.wrap.style.height = Math.round(r.height + AMB_BLEED * 2) + 'px';
+    } catch {}
+  }
   function ambEnsure() {
     if (amb.dead) return;
     const p = ambPlayer();
     if (!p) return;
-    if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== p) {
+    const b = document.body;
+    if (!b) return;
+    if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== b) {
       ambTeardown();
       try {
-        // Two elements, one job each. Shade's media rule targets `canvas` with
-        // !important brightness, and CSS filter does not compose across rules,
-        // so a blur on the canvas itself would be REPLACED (not layered) the
-        // moment Shade turns on. Blur and scale are on the canvas (no wrapper
-        // filter) so the canvas can blend directly with the video behind it via
-        // mix-blend-mode: screen. A wrapper filter would create a stacking
-        // context and isolate the blend.
+        // The wrapper lives on document.body, NOT inside the player. Ancestors
+        // of #movie_player clip overflowing children, so a negative inset
+        // inside the player is cut off in normal (non-fullscreen) mode and the
+        // bleed only ever showed in windowed mode. position:fixed + the
+        // player's viewport rect escapes every clipping ancestor.
+        // The wrapper stays neutral (no filter, no blend, no opacity) so it
+        // creates no stacking context: the canvas blends against the real page
+        // backdrop, and DOM order (first child of body) keeps the player
+        // painting above the glow.
+        // Shade's media rule targets `canvas` with !important brightness, so
+        // the glow still dims in lockstep with the intensity slider.
         const w = document.createElement('div');
         w.id = AMB_WRAP_ID;
         // Inline cssText, not a <style> element: the page CSP blocks styles a
         // content script injects, but inline styles on our own node survive it.
-        // Blur and scale stay in CSS so the backing store can stay at 64x36.
-        // width/height 100% is required on BOTH elements: an absolutely
-        // positioned replaced element keeps its intrinsic 64x36 box under
-        // inset:0 alone.
-        w.style.cssText = 'position:absolute;inset:-35px;width:calc(100% + 70px);height:calc(100% + 70px);pointer-events:none';
+        w.style.cssText = 'position:fixed;pointer-events:none';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
         c.height = 36;
-        // The scale and blur are on the canvas. Blur here means Shade's
-        // media-scope brightness will REPLACE it (not layer), but the canvas
-        // also carries mix-blend-mode: screen which blends the blurred result
-        // with the video. Opacity controls intensity.
+        // Blur and scale stay in CSS so the backing store can stay at 64x36.
+        // screen blend shows color on the dark page and only tints bright
+        // areas; opacity controls intensity.
         c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 2.4 + 'px);mix-blend-mode:screen;opacity:0.6';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
-        // The wrapper goes INSIDE #movie_player but BEHIND the video container
-        // (firstChild, not lastChild) so the glow peeks out from behind the
-        // player edges via the negative inset. #movie_player does not clip,
-        // unlike .html5-video-player which has overflow:hidden.
-        p.insertBefore(w, p.firstChild);
-        // Make the player itself transparent so the glow shows through to
-        // the page background behind it. Without this, the player's own
-        // background blocks the canvas.
-        p.style.backgroundColor = 'transparent';
-        // Canvas: blur + scale + screen blend + opacity for intensity.
-        // Blur on canvas means Shade's media-scope brightness will REPLACE it,
-        // but the screen blend persists. Opacity controls intensity.
-        // Make video AND its container background transparent so the glow shows
-        // in letterbox areas. YouTube's .html5-video-container often has a bg.
-        const v = ambVideo();
-        if (v) {
-          v.style.backgroundColor = 'transparent';
-          amb._hadVideoBg = true;
-        }
-        const vc = p.querySelector('.html5-video-container');
-        if (vc) {
-          vc.style.backgroundColor = 'transparent';
-          amb._hadContainerBg = true;
-        }
-        } catch { ambTeardown(); return; }
-      try { console.log('[Frostline Ambient] Created wrap:', w, 'canvas:', c, 'video:', v, 'container:', vc); } catch {}
+        amb._rect = '';
+        b.insertBefore(w, b.firstChild);
+        ambSyncRect();
+        try { console.log('[Frostline Ambient] Created body-level wrap, player rect:', p.getBoundingClientRect().toJSON()); } catch {}
+      } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
       // Fallback: paint a visible color so the glow is visible immediately
       // before the first video frame is captured, or if drawImage fails.
@@ -248,25 +253,13 @@
   function ambTeardown() {
     try { ambStop(); } catch {}
     const w = amb.wrap;
-    // Restore video background if we made it transparent.
-    if (amb._hadVideoBg) {
-      const v = ambVideo();
-      if (v) v.style.backgroundColor = '';
-      amb._hadVideoBg = false;
-    }
-    // Restore container background.
-    if (amb._hadContainerBg) {
-      const p = ambPlayer();
-      if (p) {
-        const vc = p.querySelector('.html5-video-container');
-        if (vc) vc.style.backgroundColor = '';
-      }
-      amb._hadContainerBg = false;
-    }
+    // The glow touches no page nodes (body-level overlay only), so teardown
+    // is just removing the wrapper.
     amb.wrap = null;
     amb.canvas = null;
     amb.ctx = null;
     amb.last = 0;
+    amb._rect = '';
     // Remove the wrapper: that takes the canvas with it, so teardown never
     // leaves a detached canvas behind or has to track two nodes.
     if (w) { try { w.remove(); } catch {} }
