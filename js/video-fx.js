@@ -505,10 +505,36 @@
       g.gain.value = cfg.volume ? cfg.volGain / 100 : 1;
     } catch {}
   }
+  // YouTube's native wash buries ours invisibly underneath it (verified live:
+  // geometry and ticks are unaffected, the flood just wins). Clearing native
+  // once per explicit toggle removes the manual step. One-way only: turning
+  // ours off never touches the user's YouTube setting. All guarded: any miss
+  // (no gear, no menu, already off) exits silently with the menu dismissed.
+  function ytAmbientOff() {
+    try {
+      const gear = document.querySelector('#movie_player .ytp-settings-button');
+      if (!gear || !gear.isConnected) return;
+      gear.click();
+      const items = Array.prototype.slice.call(document.querySelectorAll('.ytp-panel-menu .ytp-menuitem'));
+      let target = null;
+      for (const el of items) {
+        const t = ((el.getAttribute('aria-label') || el.textContent) || '').toLowerCase();
+        if (t.indexOf('ambient') >= 0) { target = el; break; }
+      }
+      if (!target) { try { gear.click(); } catch {} return; }
+      if (target.getAttribute('aria-checked') === 'true') { try { target.click(); } catch {} }
+      try { document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true })); } catch {}
+      try { if (document.querySelector('.ytp-panel-menu')) gear.click(); } catch {}
+    } catch {}
+  }
+  let ambBooted = false;
   function refresh() {
+    const was = cfg.ambient ? 1 : 0;
     loadCfg(() => {
       try { ambApply(); } catch {}
       try { volApply(); } catch {}
+      try { if (ambBooted && cfg.ambient && !was) ytAmbientOff(); } catch {}
+      ambBooted = true;
     });
   }
   // The isolated world keeps this handle off the page's global: the page cannot read or call it.

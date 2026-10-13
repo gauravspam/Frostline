@@ -189,6 +189,17 @@ function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
 wireRefresh('pp-rdim', 'pp-rdim-note', 'shade-status', 'shade-reset');
 wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
+// Adopt the worker's copy as the starting state, mirroring adoptDim/adoptExp:
+// a fresh install writes enabled here, which localStorage alone never sees.
+function adoptYt(next) {
+  if (!next || typeof next !== 'object') return;
+  th = Object.assign(th, next);
+  thEnsureShape();
+  store.set('ytCfg', th);
+}
+try {
+  chrome.storage.local.get('frostline_ytCfg', o => { try { adoptYt(o && o.frostline_ytCfg); } catch {} paintTheater(); });
+} catch {}
 paintTheater();
 try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.runtime.getManifest().version;}catch{}
 // ---- Experimental Features: volume boost + ambient light ----
@@ -258,5 +269,16 @@ try {
       paintExp();
     }
   });
+} catch {}
+// Adopt the worker's copy as the starting state, mirroring adoptDim: a fresh
+// install writes expOpen expanded, which localStorage alone would never see.
+function adoptExp(next) {
+  if (!next || typeof next !== 'object') return;
+  exp = Object.assign(exp, next);
+  expEnsureShape();
+  store.set('expCfg', exp);
+}
+try {
+  chrome.storage.local.get('frostline_expCfg', o => { try { adoptExp(o && o.frostline_expCfg); } catch {} paintExp(); });
 } catch {}
 paintExp();
