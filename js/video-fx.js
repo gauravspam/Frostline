@@ -177,18 +177,10 @@
   // Backing store: large enough that the bleed ring is several pixels wide
   // before the blur, otherwise the halo peak fades to nothing.
   const AMB_W = 96, AMB_H = 54;
-  // Transparent hole in canvas pixels, so the overlay ring never covers
-  // content itself.
-  function ambHole(x, y, w, h) {
-    try {
-      amb.ctx.save();
-      amb.ctx.globalCompositeOperation = 'destination-out';
-      amb.ctx.fillRect(x, y, w, h);
-      amb.ctx.restore();
-    } catch {}
-  }
-  // Holes where the player and the sidebar sit, so the ring physically cannot
-  // tint the video, thumbnails or text: the glow lives only in the gaps.
+  // Player hole only: the overlay ring must never tint the video itself.
+  // The sidebar is deliberately NOT punched: the wrapper already paints below
+  // every positioned sibling, so the glow sits under the sidebar and shows
+  // through its transparent areas instead of staining thumbnails and text.
   // The CSS blur softens the hole edges into a smooth falloff.
   function ambPunch() {
     try {
@@ -198,15 +190,6 @@
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
       amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
-      try {
-        const sb = document.querySelector('#secondary');
-        if (sb && amb._pr) {
-          const r = sb.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            amb.ctx.fillRect((r.left - (amb._pr.left - m)) * fx, (r.top - (amb._pr.top - m)) * fy, r.width * fx, r.height * fy);
-          }
-        }
-      } catch {}
       amb.ctx.restore();
     } catch {}
   }
@@ -268,7 +251,7 @@
         // No filter, no blend, no scale on the canvas: plain alpha compositing
         // shows on any page background, and the wrapper blur supplies the
         // softness. Scale was dropped because it would misalign the holes.
-        c.style.cssText = 'width:100%;height:100%;display:block;opacity:0.9';
+        c.style.cssText = 'width:100%;height:100%;display:block;opacity:0.75';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
@@ -332,6 +315,25 @@
   try {
     document.addEventListener('fullscreenchange', ambApply);
     document.addEventListener('webkitfullscreenchange', ambApply);
+  } catch {}
+  // The tick only re-syncs up to 10 times a second, so fast page or sidebar
+  // scrolls leave the fixed overlay lagging behind as a visible stripe. Sync
+  // on scroll/resize immediately, rAF-throttled, capture phase to catch
+  // nested scrollers like the watch sidebar.
+  let ambSyncQueued = false;
+  function ambSyncSoon() {
+    if (ambSyncQueued || !amb.wrap) return;
+    ambSyncQueued = true;
+    try {
+      requestAnimationFrame(() => {
+        ambSyncQueued = false;
+        try { ambSyncRect(); } catch {}
+      });
+    } catch { ambSyncQueued = false; }
+  }
+  try {
+    document.addEventListener('scroll', ambSyncSoon, { passive: true, capture: true });
+    window.addEventListener('resize', ambSyncSoon);
   } catch {}
   // A click in the toolbar popup is not a gesture in this document, so this
   // listener is the only thing that can ever unlock the AudioContext here.
