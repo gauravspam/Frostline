@@ -164,6 +164,7 @@
       amb.ctx.globalCompositeOperation = 'source-over';
       amb.ctx.drawImage(v, 0, 0, AMB_W, AMB_H);
       ambPunch();
+      ambFade();
       // Stamp only after a successful draw: a failed frame must not consume
       // the next frame's budget or a frozen glow masks itself as working.
       amb.last = now;
@@ -190,6 +191,37 @@
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
       amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
+      amb.ctx.restore();
+    } catch {}
+  }
+  // Edge fade: alpha ramps to zero over the outer part of the bleed, so the
+  // overlay has no visible boundary where the wrapper box ends while the
+  // inner ring keeps full strength. Stops are computed from the live player
+  // size so the fade always spans the bleed.
+  const AMB_FADE = 150;
+  function ambFade() {
+    try {
+      const W = amb._pw || 0, H = amb._ph || 0;
+      if (!amb.ctx || W <= 0 || H <= 0) return;
+      const m = AMB_BLEED;
+      const xl = Math.max(0, (m - AMB_FADE) / (W + m * 2)), xr = 1 - xl;
+      const yt = Math.max(0, (m - AMB_FADE) / (H + m * 2)), yb = 1 - yt;
+      amb.ctx.save();
+      amb.ctx.globalCompositeOperation = 'destination-in';
+      let g = amb.ctx.createLinearGradient(0, 0, AMB_W, 0);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(xl, 'rgba(0,0,0,1)');
+      g.addColorStop(xr, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      amb.ctx.fillStyle = g;
+      amb.ctx.fillRect(0, 0, AMB_W, AMB_H);
+      g = amb.ctx.createLinearGradient(0, 0, 0, AMB_H);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(yt, 'rgba(0,0,0,1)');
+      g.addColorStop(yb, 'rgba(0,0,0,1)');
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      amb.ctx.fillStyle = g;
+      amb.ctx.fillRect(0, 0, AMB_W, AMB_H);
       amb.ctx.restore();
     } catch {}
   }
@@ -267,6 +299,7 @@
         amb.ctx.fillStyle = '#0d1526';
         amb.ctx.fillRect(0, 0, AMB_W, AMB_H);
         ambPunch();
+        ambFade();
         try { console.log('[Frostline Ambient] Fallback painted'); } catch {}
       }
       if (!amb.ctx) {
