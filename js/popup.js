@@ -45,6 +45,14 @@ function saveDim() {
 function paint() {
   const t = document.querySelector('#pp-toggle');
   if (t) t.classList.toggle('on', !!dim.enabled);
+  // Shade sub-controls only exist while Shade is on, mirroring the Volume
+  // Boost slider pattern: no toggle, no controls.
+  const dr = document.querySelector('#pp-dim-row');
+  if (dr) dr.style.display = dim.enabled ? '' : 'none';
+  const md = document.querySelector('#pp-mode');
+  if (md) md.style.display = dim.enabled ? '' : 'none';
+  const sc = document.querySelector('#pp-scope');
+  if (sc) sc.style.display = dim.enabled ? '' : 'none';
   const r = document.querySelector('#pp-intensity');
   dimEnsureShapeP();
   if (r && document.activeElement !== r) {
@@ -227,7 +235,14 @@ function paintExp(){
   if (body) body.classList.toggle('open', !!exp.expOpen);
 }
 document.querySelector('#exp-head').onclick = () => { exp.expOpen = exp.expOpen ? 0 : 1; saveExp(); paintExp(); };
-document.querySelector('#pp-vol-toggle').onclick = () => { exp.volume = exp.volume ? 0 : 1; saveExp(); paintExp(); };
+document.querySelector('#pp-vol-toggle').onclick = () => {
+  exp.volume = exp.volume ? 0 : 1;
+  // Enabling at the 100% floor would be a silent no-op (unity gain), which
+  // reads as broken. Nudge to a perceptible default so ON means audible.
+  if (exp.volume && exp.volGain <= 100) exp.volGain = 150;
+  saveExp();
+  paintExp();
+};
 document.querySelector('#pp-vol-gain').oninput = e => { 
   exp.volGain = +e.target.value; 
   const pct = Math.round((exp.volGain - 100) / 2);
