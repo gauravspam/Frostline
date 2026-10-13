@@ -158,12 +158,12 @@
       if (!v.videoWidth || !v.videoHeight) return;
       const now = Date.now();
       if (now - amb.last < 100) return;
-      // Sample the center 80% of the frame to avoid encoded letterbox bars.
-      const sx = v.videoWidth * 0.1;
-      const sy = v.videoHeight * 0.1;
-      const sw = v.videoWidth * 0.8;
-      const sh = v.videoHeight * 0.8;
-      amb.ctx.drawImage(v, sx, sy, sw, sh, 0, 0, 64, 36);
+      // Full frame: edge colors are exactly what the bleed ring needs. The
+      // hole punch below removes the middle, so letterbox bars in the source
+      // only feed the ring, never the video.
+      amb.ctx.globalCompositeOperation = 'source-over';
+      amb.ctx.drawImage(v, 0, 0, 64, 36);
+      ambPunch();
       // Stamp only after a successful draw: a failed frame must not consume
       // the next frame's budget or a frozen glow masks itself as working.
       amb.last = now;
@@ -171,7 +171,21 @@
     } catch {}
   }
   // Bleed margin around the player so the glow spills onto the page.
-  const AMB_BLEED = 60;
+  const AMB_BLEED = 80;
+  // Transparent hole where the player sits, in canvas pixels, so the overlay
+  // ring never tints the video itself. Called after every paint including the
+  // fallback fill. The CSS blur softens the hole edges into a smooth falloff.
+  function ambPunch() {
+    try {
+      const W = amb._pw || 0, H = amb._ph || 0;
+      if (!amb.ctx || W <= 0 || H <= 0) return;
+      const m = AMB_BLEED, fx = 64 / (W + m * 2), fy = 36 / (H + m * 2);
+      amb.ctx.save();
+      amb.ctx.globalCompositeOperation = 'destination-out';
+      amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
+      amb.ctx.restore();
+    } catch {}
+  }
   // Sync the body-level wrapper to the player's viewport rect. Cheap string
   // compare avoids layout thrash when nothing moved.
   function ambSyncRect() {
@@ -179,10 +193,12 @@
       const p = ambPlayer();
       if (!p || !amb.wrap) return;
       const r = p.getBoundingClientRect();
-      if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; return; }
+      if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; amb._pw = 0; amb._ph = 0; return; }
       const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
       if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
       amb._rect = key;
+      amb._pw = Math.round(r.width);
+      amb._ph = Math.round(r.height);
       amb.wrap.style.display = '';
       amb.wrap.style.left = Math.round(r.left - AMB_BLEED) + 'px';
       amb.wrap.style.top = Math.round(r.top - AMB_BLEED) + 'px';
@@ -199,30 +215,27 @@
     if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== b) {
       ambTeardown();
       try {
-        // The wrapper lives on document.body, NOT inside the player. Ancestors
-        // of #movie_player clip overflowing children, so a negative inset
-        // inside the player is cut off in normal (non-fullscreen) mode and the
-        // bleed only ever showed in windowed mode. position:fixed + the
-        // player's viewport rect escapes every clipping ancestor.
-        // The wrapper stays neutral (no filter, no blend, no opacity) so it
-        // creates no stacking context: the canvas blends against the real page
-        // backdrop, and DOM order (first child of body) keeps the player
-        // painting above the glow.
-        // Shade's media rule targets `canvas` with !important brightness, so
-        // the glow still dims in lockstep with the intensity slider.
+        // The wrapper lives on document.body with a high z-index. Proven by
+        // probe: body's firstChild is buried under ytd-app's opaque
+        // background, and #movie_player, .html5-video-player and #ytd-player
+        // all clip overflow, so in-player bleed can never show in normal
+        // mode. z-index here beats every page background; the punched hole
+        // keeps the video itself untouched and pointer-events stays none.
+        // The blur lives on the wrapper (not the canvas) so Shade's
+        // !important brightness on `canvas` dims without killing the blur.
         const w = document.createElement('div');
         w.id = AMB_WRAP_ID;
         // Inline cssText, not a <style> element: the page CSP blocks styles a
         // content script injects, but inline styles on our own node survive it.
-        w.style.cssText = 'position:fixed;pointer-events:none';
+        w.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;filter:blur(' + AMB_BLUR * 2.4 + 'px)';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
         c.width = 64;
         c.height = 36;
-        // Blur and scale stay in CSS so the backing store can stay at 64x36.
-        // screen blend shows color on the dark page and only tints bright
-        // areas; opacity controls intensity.
-        c.style.cssText = 'width:100%;height:100%;display:block;transform:scale(' + AMB_SPREAD / 100 + ');filter:blur(' + AMB_BLUR * 2.4 + 'px);mix-blend-mode:screen;opacity:0.6';
+        // No filter, no blend, no scale on the canvas: plain alpha compositing
+        // shows on any page background, and the wrapper blur supplies the
+        // softness. Scale was dropped because it would misalign the hole.
+        c.style.cssText = 'width:100%;height:100%;display:block;opacity:0.75';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
@@ -235,8 +248,10 @@
       // Fallback: paint a visible color so the glow is visible immediately
       // before the first video frame is captured, or if drawImage fails.
       if (amb.ctx) {
+        amb.ctx.globalCompositeOperation = 'source-over';
         amb.ctx.fillStyle = '#0a84ff';
         amb.ctx.fillRect(0, 0, 64, 36);
+        ambPunch();
         try { console.log('[Frostline Ambient] Fallback painted'); } catch {}
       }
       if (!amb.ctx) {
