@@ -186,10 +186,11 @@
     try {
       const W = amb._pw || 0, H = amb._ph || 0;
       if (!amb.ctx || W <= 0 || H <= 0) return;
-      const m = AMB_BLEED, fx = AMB_W / (W + m * 2), fy = AMB_H / (H + m * 2);
+      const mg = amb._m || { l: AMB_BLEED, t: AMB_BLEED, r: AMB_BLEED, b: AMB_BLEED };
+      const fx = AMB_W / (W + mg.l + mg.r), fy = AMB_H / (H + mg.t + mg.b);
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
-      amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
+      amb.ctx.fillRect(mg.l * fx, mg.t * fy, W * fx, H * fy);
       amb.ctx.restore();
     } catch {}
   }
@@ -201,7 +202,9 @@
     try { return document.querySelector('ytd-app') || document.body; } catch { return document.body; }
   }
   // Sync the overlay to the player's viewport rect. Cheap string
-  // compare avoids layout thrash when nothing moved.
+  // compare avoids layout thrash when nothing moved. The right margin stretches
+  // to the viewport edge so the halo reaches the right end of the screen;
+  // top/left/bottom keep the fixed bleed.
   function ambSyncRect() {
     try {
       const p = ambPlayer();
@@ -209,15 +212,19 @@
       const r = p.getBoundingClientRect();
       if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; amb._pw = 0; amb._ph = 0; return; }
       amb._pr = { left: r.left, top: r.top };
-      const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
+      let vw = 0;
+      try { vw = document.documentElement.clientWidth || window.innerWidth || 0; } catch {}
+      const mr = Math.max(AMB_BLEED, vw ? vw - r.right + 24 : AMB_BLEED);
+      const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + Math.round(mr);
       if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
       amb._rect = key;
       amb._pw = Math.round(r.width);
       amb._ph = Math.round(r.height);
+      amb._m = { l: AMB_BLEED, t: AMB_BLEED, r: mr, b: AMB_BLEED };
       amb.wrap.style.display = '';
       amb.wrap.style.left = Math.round(r.left - AMB_BLEED) + 'px';
       amb.wrap.style.top = Math.round(r.top - AMB_BLEED) + 'px';
-      amb.wrap.style.width = Math.round(r.width + AMB_BLEED * 2) + 'px';
+      amb.wrap.style.width = Math.round(r.width + AMB_BLEED + mr) + 'px';
       amb.wrap.style.height = Math.round(r.height + AMB_BLEED * 2) + 'px';
     } catch {}
   }
@@ -389,7 +396,10 @@
     } catch {}
   }
   // The compressor is the limiter. Without it, gain above 1 hard-clips at the
-  // destination and louder comes out as distortion instead of volume.
+  // destination and louder comes out as distortion instead of volume. The
+  // ceiling sits at full scale with a gentler ratio: a low threshold pinned
+  // everything on already-loud videos to the same ceiling, which made the
+  // boost control feel dead. Peaks still cannot clip past 0dBFS.
   function volAttach() {
     // Preview players on browse pages must never be routed through a graph.
     if (!isWatchPage()) return;
@@ -405,9 +415,9 @@
       }
       audio.ctx = new AC();
       audio.limiter = audio.ctx.createDynamicsCompressor();
-      audio.limiter.threshold.value = -3;
+      audio.limiter.threshold.value = 0;
       audio.limiter.knee.value = 0;
-      audio.limiter.ratio.value = 20;
+      audio.limiter.ratio.value = 12;
       audio.limiter.attack.value = 0.003;
       audio.limiter.release.value = 0.25;
       audio.limiter.connect(audio.ctx.destination);

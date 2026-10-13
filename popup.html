@@ -5,16 +5,16 @@
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html{background:#101012}
-  body{width:340px;padding:12px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:linear-gradient(180deg,#26262b,#101012);color:#fff}
-  .shell{background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.1);border-radius:18px;overflow:hidden;padding:16px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
-  h1.sec{font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin:16px 4px 8px}
+  body{width:320px;padding:10px;font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;background:linear-gradient(180deg,#26262b,#101012);color:#fff}
+  .shell{background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.1);border-radius:16px;overflow:hidden;padding:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+  h1.sec{font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px;margin:12px 4px 6px}
   h1.sec:first-child{margin-top:2px}
   #pp-ver{float:right;font-size:10px;font-weight:500;color:rgba(255,255,255,.35);text-transform:none;letter-spacing:.3px}
-  .card{background:#1c1c1e;border-radius:18px;padding:6px 14px 14px}
-  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:0;padding:10px 0;font-size:14px;color:#fff}
+  .card{background:#1c1c1e;border-radius:14px;padding:4px 12px 10px}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:0;padding:7px 0;font-size:13px;color:#fff}
   .card .row+.row{border-top:1px solid rgba(255,255,255,.08)}
-  .seg{display:flex;gap:0;background:rgba(118,118,128,.24);border-radius:12px;padding:3px;margin-top:12px}
-  .seg button{flex:1;border:none;background:transparent;color:rgba(255,255,255,.85);border-radius:9px;padding:8px 4px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
+  .seg{display:flex;gap:0;background:rgba(118,118,128,.24);border-radius:10px;padding:2px;margin-top:8px}
+  .seg button{flex:1;border:none;background:transparent;color:rgba(255,255,255,.85);border-radius:8px;padding:6px 4px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit}
   .seg button.on{background:#636366;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4)}
   .seg button.edit{box-shadow:0 0 0 2px #0a84ff}
   #pp-mode button[data-m="dimmer"].on{background:#0a84ff}
@@ -22,16 +22,16 @@
   #pp-mode button[data-m="blur"].on{background:#bf5af2}
   .seg button.denied{background:rgba(255,69,58,.4)!important;color:#fff;transition:background .2s}
   .seg button:disabled{opacity:.35}
-  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:32px;margin:0;min-width:0}
-  input[type=range]::-webkit-slider-runnable-track{height:2px;border-radius:1px;background:rgba(120,120,128,.3)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;margin-top:-9px;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer;transition:transform .1s ease,box-shadow .1s ease}
-  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12);box-shadow:0 2px 6px rgba(0,0,0,.35)}
-  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,.4)}
-  input[type=range]::-moz-range-track{height:2px;border-radius:1px;background:rgba(120,120,128,.3)}
-  input[type=range]::-moz-range-thumb{width:20px;height:20px;border:none;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-  input[type=range]::-moz-range-progress{height:2px;border-radius:1px;background:#0a84ff}
+  input[type=range]{flex:1;cursor:pointer;-webkit-appearance:none;appearance:none;background:transparent;height:28px;margin:0;min-width:0}
+  input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:rgba(120,120,128,.3)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;margin-top:-7px;box-shadow:0 1px 3px rgba(0,0,0,.35);cursor:pointer;transition:transform .1s ease,box-shadow .1s ease}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12);box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  input[type=range]::-webkit-slider-thumb:active{transform:scale(1.18);box-shadow:0 2px 8px rgba(0,0,0,.45)}
+  input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:rgba(120,120,128,.3)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:#0a84ff}
   /* Apple-style fill on the track via background gradient - updates via JS */
-  input[type=range]{background:linear-gradient(#0a84ff,#0a84ff) 0 50%/0 2px no-repeat,rgba(120,120,128,.3) 0 50%/100% 2px no-repeat}
+  input[type=range]{background:linear-gradient(#0a84ff,#0a84ff) 0 50%/0 4px no-repeat,rgba(120,120,128,.3) 0 50%/100% 4px no-repeat}
   input[type=range]::-webkit-slider-runnable-track{background:transparent}
   .val{min-width:44px;text-align:right;font-size:13px;color:#fff;font-variant-numeric:tabular-nums}
   .val.preview{color:#0a84ff}
@@ -49,19 +49,17 @@
   @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}50%{box-shadow:0 0 0 5px rgba(255,69,58,0)}}
   .rnote{font-size:12px;color:#ff9f9a;margin:4px 0 2px;display:none}
   .rnote.show{display:block}
-  .exp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px 4px;cursor:pointer;font-size:12px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
+  .exp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px 2px;cursor:pointer;font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
   .exp-head:hover{color:#c7c7cc}
   #exp-caret{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;opacity:.7}
   .exp-head.open #exp-caret{transform:rotate(90deg)}
   #exp-body{max-height:0;overflow:hidden;transition:max-height .22s ease}
   #exp-body.open{max-height:320px}
-  .exp-hint{font-size:11px;color:rgba(255,255,255,.4);margin:8px 2px 0;line-height:1.45}
   .exp-title{display:flex;align-items:center;gap:8px}
   /* Compact density so the open section stays under the 600px popup limit. */
-  #exp-head{margin:8px 4px 2px;padding-top:8px}
+  #exp-head{margin:6px 4px 2px;padding-top:6px}
   #exp-body .row{padding:1px 0}
-  #exp-body .card{padding-top:2px;padding-bottom:10px}
-  #exp-hint{margin-top:6px}
+  #exp-body .card{padding-top:2px;padding-bottom:8px}
 </style>
 </head>
 <body>
@@ -89,7 +87,6 @@
   <div class="row"><span>Volume Boost</span><span class="rgroup"><button class="tswitch" id="pp-vol-toggle" aria-label="Volume Boost"><i></i></button></span></div>
   <div class="row"><input type="range" id="pp-vol-gain" min="100" max="300" step="5" value="100" /><span class="val" id="pp-vol-val">100%</span></div>
   <div class="row"><span>Ambient Light</span><span class="rgroup"><button class="tswitch" id="pp-amb-toggle" aria-label="Ambient Light"><i></i></button></span></div>
-  <p class="exp-hint" id="exp-hint">Volume Boost starts after you click the video. Ambient Light dims with Shade on Media scope.</p>
   </div>
   </div>
   </div>
