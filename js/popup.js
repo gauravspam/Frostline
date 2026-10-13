@@ -207,6 +207,9 @@ function paintExp(){
   const vt = document.querySelector('#pp-vol-toggle');
   if (vt) vt.classList.toggle('on', !!exp.volume);
   const g = document.querySelector('#pp-vol-gain');
+  const grow = document.querySelector('#pp-vol-row');
+  // The gain slider only exists while Volume Boost is on: no toggle, no slider.
+  if (grow) grow.style.display = exp.volume ? '' : 'none';
   if (g && document.activeElement !== g) {
     g.value = exp.volGain;
     // Update fill gradient: 100->0%, 300->100%

@@ -197,8 +197,9 @@
   // Edge fade: alpha ramps to zero over the outer part of the bleed, so the
   // overlay has no visible boundary where the wrapper box ends while the
   // inner ring keeps full strength. Stops are computed from the live player
-  // size so the fade always spans the bleed.
-  const AMB_FADE = 150;
+  // size so the fade always spans the bleed. The zone stays narrow so the
+  // far field keeps its presence instead of dissolving into nothing.
+  const AMB_FADE = 80;
   function ambFade() {
     try {
       const W = amb._pw || 0, H = amb._ph || 0;
