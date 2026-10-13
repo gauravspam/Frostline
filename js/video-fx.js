@@ -191,6 +191,18 @@
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
       amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
+      // Masthead hole: the search cluster (bar, button, icons) must read as
+      // one clean unit, so the glow stays out of the whole header strip
+      // instead of washing half of it.
+      try {
+        const mh = document.querySelector('#masthead-container');
+        if (mh && amb._pr) {
+          const q = mh.getBoundingClientRect();
+          if (q.width > 0 && q.height > 0) {
+            amb.ctx.fillRect((q.left - (amb._pr.left - m)) * fx, (q.top - (amb._pr.top - m)) * fy, q.width * fx, q.height * fy);
+          }
+        }
+      } catch {}
       amb.ctx.restore();
     } catch {}
   }
@@ -241,6 +253,7 @@
       if (!p || !amb.wrap) return;
       const r = p.getBoundingClientRect();
       if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; amb._pw = 0; amb._ph = 0; return; }
+      amb._pr = { left: r.left, top: r.top };
       const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
       if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
       amb._rect = key;
