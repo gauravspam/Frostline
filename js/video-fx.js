@@ -132,7 +132,7 @@
       if (amb.dead || !cfg.ambient || nativeFs()) return;
       const p = ambPlayer();
       if (!p) return;
-      if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== document.body) { ambApply(); return; }
+      if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== ambHost()) { ambApply(); return; }
       ambSyncRect();
       if (!amb.vfc && !amb.timer) ambArm();
       try { console.log('[Frostline Ambient] Watchdog tick, wrap connected:', amb.wrap?.isConnected, 'cfg.ambient:', cfg.ambient); } catch {}
@@ -162,7 +162,7 @@
       // hole punch below removes the middle, so letterbox bars in the source
       // only feed the ring, never the video.
       amb.ctx.globalCompositeOperation = 'source-over';
-      amb.ctx.drawImage(v, 0, 0, 64, 36);
+      amb.ctx.drawImage(v, 0, 0, AMB_W, AMB_H);
       ambPunch();
       // Stamp only after a successful draw: a failed frame must not consume
       // the next frame's budget or a frozen glow masks itself as working.
@@ -170,23 +170,54 @@
       try { console.log('[Frostline Ambient] Tick drawn, video:', v.videoWidth+'x'+v.videoHeight, 'wrap:', amb.wrap.isConnected); } catch {}
     } catch {}
   }
-  // Bleed margin around the player so the glow spills onto the page.
-  const AMB_BLEED = 80;
-  // Transparent hole where the player sits, in canvas pixels, so the overlay
-  // ring never tints the video itself. Called after every paint including the
-  // fallback fill. The CSS blur softens the hole edges into a smooth falloff.
+  // Bleed margin around the player so the glow spills onto the page. Sized
+  // against the blur below: the ring holds meaningful peak intensity only if
+  // the bleed is several times the blur radius.
+  const AMB_BLEED = 140;
+  // Backing store: large enough that the bleed ring is several pixels wide
+  // before the blur, otherwise the halo peak fades to nothing.
+  const AMB_W = 96, AMB_H = 54;
+  // Transparent hole in canvas pixels, so the overlay ring never covers
+  // content itself.
+  function ambHole(x, y, w, h) {
+    try {
+      amb.ctx.save();
+      amb.ctx.globalCompositeOperation = 'destination-out';
+      amb.ctx.fillRect(x, y, w, h);
+      amb.ctx.restore();
+    } catch {}
+  }
+  // Holes where the player and the sidebar sit, so the ring physically cannot
+  // tint the video, thumbnails or text: the glow lives only in the gaps.
+  // The CSS blur softens the hole edges into a smooth falloff.
   function ambPunch() {
     try {
       const W = amb._pw || 0, H = amb._ph || 0;
       if (!amb.ctx || W <= 0 || H <= 0) return;
-      const m = AMB_BLEED, fx = 64 / (W + m * 2), fy = 36 / (H + m * 2);
+      const m = AMB_BLEED, fx = AMB_W / (W + m * 2), fy = AMB_H / (H + m * 2);
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
       amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
+      try {
+        const sb = document.querySelector('#secondary');
+        if (sb && amb._pr) {
+          const r = sb.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) {
+            amb.ctx.fillRect((r.left - (amb._pr.left - m)) * fx, (r.top - (amb._pr.top - m)) * fy, r.width * fx, r.height * fy);
+          }
+        }
+      } catch {}
       amb.ctx.restore();
     } catch {}
   }
-  // Sync the body-level wrapper to the player's viewport rect. Cheap string
+  // ytd-app first: its opaque background buries a body-level overlay, and as
+  // firstChild the glow paints above that background but below every
+  // positioned sibling (player, sidebar, masthead). Falls back to body where
+  // no app shell exists.
+  function ambHost() {
+    try { return document.querySelector('ytd-app') || document.body; } catch { return document.body; }
+  }
+  // Sync the overlay to the player's viewport rect. Cheap string
   // compare avoids layout thrash when nothing moved.
   function ambSyncRect() {
     try {
@@ -194,6 +225,7 @@
       if (!p || !amb.wrap) return;
       const r = p.getBoundingClientRect();
       if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; amb._pw = 0; amb._ph = 0; return; }
+      amb._pr = { left: r.left, top: r.top };
       const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
       if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
       amb._rect = key;
@@ -210,32 +242,33 @@
     if (amb.dead) return;
     const p = ambPlayer();
     if (!p) return;
-    const b = document.body;
+    const b = ambHost();
     if (!b) return;
     if (!amb.wrap || !amb.wrap.isConnected || amb.wrap.parentNode !== b) {
       ambTeardown();
       try {
-        // The wrapper lives on document.body with a high z-index. Proven by
-        // probe: body's firstChild is buried under ytd-app's opaque
-        // background, and #movie_player, .html5-video-player and #ytd-player
-        // all clip overflow, so in-player bleed can never show in normal
-        // mode. z-index here beats every page background; the punched hole
-        // keeps the video itself untouched and pointer-events stays none.
+        // The wrapper lives in ytd-app, NOT on body and NOT in the player.
+        // Probed live: #movie_player, .html5-video-player and #ytd-player all
+        // clip overflow (in-player bleed dies in normal mode), while a
+        // body-level overlay is buried under ytd-app's opaque background.
+        // As ytd-app's firstChild with no z-index, the glow paints above that
+        // background but below every positioned sibling, so sidebar and player
+        // render crisply on top. The sidebar hole below makes that airtight.
         // The blur lives on the wrapper (not the canvas) so Shade's
         // !important brightness on `canvas` dims without killing the blur.
         const w = document.createElement('div');
         w.id = AMB_WRAP_ID;
         // Inline cssText, not a <style> element: the page CSP blocks styles a
         // content script injects, but inline styles on our own node survive it.
-        w.style.cssText = 'position:fixed;pointer-events:none;z-index:1000;filter:blur(' + AMB_BLUR * 2.4 + 'px)';
+        w.style.cssText = 'position:fixed;pointer-events:none;filter:blur(' + AMB_BLUR * 1.6 + 'px)';
         const c = document.createElement('canvas');
         c.id = AMB_ID;
-        c.width = 64;
-        c.height = 36;
+        c.width = AMB_W;
+        c.height = AMB_H;
         // No filter, no blend, no scale on the canvas: plain alpha compositing
         // shows on any page background, and the wrapper blur supplies the
-        // softness. Scale was dropped because it would misalign the hole.
-        c.style.cssText = 'width:100%;height:100%;display:block;opacity:0.75';
+        // softness. Scale was dropped because it would misalign the holes.
+        c.style.cssText = 'width:100%;height:100%;display:block;opacity:0.9';
         w.appendChild(c);
         amb.wrap = w;
         amb.canvas = c;
@@ -250,7 +283,7 @@
       if (amb.ctx) {
         amb.ctx.globalCompositeOperation = 'source-over';
         amb.ctx.fillStyle = '#0a84ff';
-        amb.ctx.fillRect(0, 0, 64, 36);
+        amb.ctx.fillRect(0, 0, AMB_W, AMB_H);
         ambPunch();
         try { console.log('[Frostline Ambient] Fallback painted'); } catch {}
       }
