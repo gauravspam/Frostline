@@ -170,10 +170,10 @@
       try { console.log('[Frostline Ambient] Tick drawn, video:', v.videoWidth+'x'+v.videoHeight, 'wrap:', amb.wrap.isConnected); } catch {}
     } catch {}
   }
-  // Bleed margin around the player so the glow spills onto the page. Sized
-  // against the blur below: the ring holds meaningful peak intensity only if
-  // the bleed is several times the blur radius.
-  const AMB_BLEED = 140;
+  // Bleed margin on ALL sides so the halo reaches well past the player,
+  // including the right screen edge. Sized against the blur: the ring holds
+  // meaningful peak intensity only if the bleed is several times the blur.
+  const AMB_BLEED = 400;
   // Backing store: large enough that the bleed ring is several pixels wide
   // before the blur, otherwise the halo peak fades to nothing.
   const AMB_W = 96, AMB_H = 54;
@@ -186,11 +186,10 @@
     try {
       const W = amb._pw || 0, H = amb._ph || 0;
       if (!amb.ctx || W <= 0 || H <= 0) return;
-      const mg = amb._m || { l: AMB_BLEED, t: AMB_BLEED, r: AMB_BLEED, b: AMB_BLEED };
-      const fx = AMB_W / (W + mg.l + mg.r), fy = AMB_H / (H + mg.t + mg.b);
+      const m = AMB_BLEED, fx = AMB_W / (W + m * 2), fy = AMB_H / (H + m * 2);
       amb.ctx.save();
       amb.ctx.globalCompositeOperation = 'destination-out';
-      amb.ctx.fillRect(mg.l * fx, mg.t * fy, W * fx, H * fy);
+      amb.ctx.fillRect(m * fx, m * fy, W * fx, H * fy);
       amb.ctx.restore();
     } catch {}
   }
@@ -202,29 +201,22 @@
     try { return document.querySelector('ytd-app') || document.body; } catch { return document.body; }
   }
   // Sync the overlay to the player's viewport rect. Cheap string
-  // compare avoids layout thrash when nothing moved. The right margin stretches
-  // to the viewport edge so the halo reaches the right end of the screen;
-  // top/left/bottom keep the fixed bleed.
+  // compare avoids layout thrash when nothing moved.
   function ambSyncRect() {
     try {
       const p = ambPlayer();
       if (!p || !amb.wrap) return;
       const r = p.getBoundingClientRect();
       if (!r.width || !r.height) { amb.wrap.style.display = 'none'; amb._rect = ''; amb._pw = 0; amb._ph = 0; return; }
-      amb._pr = { left: r.left, top: r.top };
-      let vw = 0;
-      try { vw = document.documentElement.clientWidth || window.innerWidth || 0; } catch {}
-      const mr = Math.max(AMB_BLEED, vw ? vw - r.right + 24 : AMB_BLEED);
-      const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height) + ',' + Math.round(mr);
+      const key = Math.round(r.left) + ',' + Math.round(r.top) + ',' + Math.round(r.width) + ',' + Math.round(r.height);
       if (amb._rect === key) { if (amb.wrap.style.display === 'none') amb.wrap.style.display = ''; return; }
       amb._rect = key;
       amb._pw = Math.round(r.width);
       amb._ph = Math.round(r.height);
-      amb._m = { l: AMB_BLEED, t: AMB_BLEED, r: mr, b: AMB_BLEED };
       amb.wrap.style.display = '';
       amb.wrap.style.left = Math.round(r.left - AMB_BLEED) + 'px';
       amb.wrap.style.top = Math.round(r.top - AMB_BLEED) + 'px';
-      amb.wrap.style.width = Math.round(r.width + AMB_BLEED + mr) + 'px';
+      amb.wrap.style.width = Math.round(r.width + AMB_BLEED * 2) + 'px';
       amb.wrap.style.height = Math.round(r.height + AMB_BLEED * 2) + 'px';
     } catch {}
   }
@@ -243,7 +235,7 @@
         // body-level overlay is buried under ytd-app's opaque background.
         // As ytd-app's firstChild with no z-index, the glow paints above that
         // background but below every positioned sibling, so sidebar and player
-        // render crisply on top. The sidebar hole below makes that airtight.
+        // render crisply on top.
         // The blur lives on the wrapper (not the canvas) so Shade's
         // !important brightness on `canvas` dims without killing the blur.
         const w = document.createElement('div');
@@ -268,11 +260,11 @@
         try { console.log('[Frostline Ambient] Created body-level wrap, player rect:', p.getBoundingClientRect().toJSON()); } catch {}
       } catch { ambTeardown(); return; }
       try { amb.ctx = amb.canvas.getContext('2d'); } catch { amb.ctx = null; }
-      // Fallback: paint a visible color so the glow is visible immediately
-      // before the first video frame is captured, or if drawImage fails.
+      // Fallback: a dark neutral so slow loads show almost nothing instead of
+      // washing the whole page in the old bright-blue placeholder.
       if (amb.ctx) {
         amb.ctx.globalCompositeOperation = 'source-over';
-        amb.ctx.fillStyle = '#0a84ff';
+        amb.ctx.fillStyle = '#0d1526';
         amb.ctx.fillRect(0, 0, AMB_W, AMB_H);
         ambPunch();
         try { console.log('[Frostline Ambient] Fallback painted'); } catch {}
