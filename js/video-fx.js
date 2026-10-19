@@ -354,6 +354,19 @@
     document.addEventListener('fullscreenchange', ambApply);
     document.addEventListener('webkitfullscreenchange', ambApply);
   } catch {}
+  // YouTube routes home to /watch without a document load, so the boot-time
+  // apply ran while isWatchPage() was false and armed nothing. Without this the
+  // glow only appeared once the popup wrote storage and re-triggered refresh().
+  try { document.addEventListener('yt-navigate-finish', ambApply); } catch {}
+  let ambLastUrl = '';
+  try { ambLastUrl = location.href; } catch {}
+  setInterval(() => {
+    try {
+      if (location.href === ambLastUrl) return;
+      ambLastUrl = location.href;
+      ambApply();
+    } catch {}
+  }, 1000);
   // The tick only re-syncs up to 10 times a second, so fast page or sidebar
   // scrolls leave the fixed overlay lagging behind as a visible stripe. Sync
   // on scroll/resize immediately, rAF-throttled, capture phase to catch

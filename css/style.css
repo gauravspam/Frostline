@@ -1,7 +1,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html{color-scheme:dark}
 html,body{height:100%;font-family:"Google Sans","Product Sans",Roboto,-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",sans-serif;color:#fff;overflow:hidden;background:#0b0e13}
-#bg-layer{position:fixed;inset:0;background:url('https://images.unsplash.com/photo-1477414348463-c0eb7f1359b6?q=80&w=1920&auto=format&fit=crop') center/cover;filter:saturate(1.05)}
+#bg-layer{position:fixed;inset:0;background:var(--bg-boot,#0b0e13) center/cover;filter:saturate(1.05)}
 #bg-tint{position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 30%,rgba(0,0,0,.45) 100%)}
 #bg-vignette{position:fixed;inset:0;box-shadow:inset 0 0 200px rgba(0,0,0,.5);pointer-events:none}
 .dark-glass{background:rgba(18,18,20,.55);backdrop-filter:blur(22px) saturate(1.3);-webkit-backdrop-filter:blur(22px) saturate(1.3);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 32px rgba(0,0,0,.35)}

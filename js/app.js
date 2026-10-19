@@ -480,7 +480,12 @@ async function loadBackground(force){const mode=store.get('bg','unsplash');const
   if(mode!=='unsplash')return;
   const iv=store.get('refresh','day');const ttl=(iv==='tab'||iv==='always')?0:iv==='hour'?36e5:iv==='six'?216e5:iv==='week'?7*864e5:iv==='never'?Infinity:864e5;
   const cache=store.get('bgCache',null);const now=Date.now();
-  if(!force&&cache&&cache.url&&(now-cache.ts)<ttl){setBgUrl(cache.url,cache.credit);return;}
+  // Keep the last wallpaper up while a fresh one is fetched: Every New Tab has
+  // ttl 0, so the layer would otherwise sit on the bare background for the
+  // whole round trip. Painted directly rather than via setBgUrl because the
+  // accent bootstrap below already samples this exact cached url.
+  if(cache&&cache.url)$('#bg-layer').style.background=`url('${cache.url}') center/cover`;
+  if(!force&&cache&&cache.url&&(now-cache.ts)<ttl)return;
   const key=store.get('unsplashKey','');
   if(!key){const k=keylessPhoto();store.set('bgCache',{url:k.url,credit:k.credit,ts:now});swapBg(k.url,k.credit);if(st)st.textContent='';return;}
   if(st)st.textContent='Loading from Unsplash…';
