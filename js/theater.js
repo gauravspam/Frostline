@@ -8,6 +8,9 @@
   // video opened from the homepage enters it before the user can react.
   const DEF = { enabled: 0, wfs: 0, remember: 1, shortcut: 1 };
   let cfg = Object.assign({}, DEF);
+  // Rising-edge detector for the exit hint, so it fires once per entry rather
+  // than on every applyAll (which also runs on resize and route changes).
+  let wasWfs = false;
   const store = (cb) => {
     try {
       chrome.storage.local.get(['frostline_ytCfg', 'frostline_theaterMem'], (o) => {
@@ -97,6 +100,37 @@
   function nativeFs() {
     try { return !!(document.fullscreenElement || document.webkitFullscreenElement); } catch { return false; }
   }
+  // Chrome paints its own "To exit full screen, press Esc" pill over native
+  // fullscreen. Windowed mode gets no browser affordance, so mirror one here:
+  // without it the exit key is undiscoverable.
+  const HINT_ID = 'frostline-wfs-hint';
+  let hintTimer = 0;
+  function hintHide() {
+    try { if (hintTimer) { clearTimeout(hintTimer); hintTimer = 0; } } catch {}
+    try {
+      const t = document.getElementById(HINT_ID);
+      if (!t) return;
+      t.style.opacity = '0';
+      setTimeout(() => { try { t.remove(); } catch {} }, 280);
+    } catch {}
+  }
+  function hintShow() {
+    try {
+      hintHide();
+      const t = document.createElement('div');
+      t.id = HINT_ID;
+      const txt = document.createElement('span');
+      txt.textContent = 'To exit windowed fullscreen, press';
+      const key = document.createElement('kbd');
+      key.textContent = 'Esc';
+      t.appendChild(txt); t.appendChild(key);
+      t.style.cssText = 'position:fixed;top:26px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:9px;background:rgba(22,22,25,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:#fff;font:400 13px/1 system-ui,sans-serif;padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.14);box-shadow:0 6px 26px rgba(0,0,0,.5);pointer-events:none;opacity:0;transition:opacity .25s ease';
+      key.style.cssText = 'display:inline-flex;align-items:center;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);border-radius:5px;padding:2px 7px;font:500 12px/1 system-ui,sans-serif;box-shadow:0 1px 0 rgba(0,0,0,.35)';
+      (document.body || document.documentElement).appendChild(t);
+      requestAnimationFrame(() => { try { t.style.opacity = '1'; } catch {} });
+      hintTimer = setTimeout(hintHide, 4000);
+    } catch {}
+  }
   function applyAll() {
     if (!isWatchPage()) { cleanup(); return; }
     const de = document.documentElement;
@@ -104,6 +138,10 @@
     if (wfsOn) theaterOn(); else theaterOff();
     de.classList.toggle('frostline-th-wfs', wfsOn);
     de.classList.toggle('frostline-th', !!cfg.enabled);
+    // Only on the rising edge: applyAll also runs on every route change and on
+    // native fullscreen transitions, which would otherwise re-toast constantly.
+    if (wfsOn && !wasWfs) hintShow(); else if (!wfsOn && wasWfs) hintHide();
+    wasWfs = wfsOn;
     try { window.dispatchEvent(new Event('resize')); } catch {}
   }
   function onNativeFs() {
@@ -135,6 +173,25 @@
     } catch {}
   }
   try { document.addEventListener('keydown', onKey, true); } catch {}
+  // Native fullscreen exits on double-click of the video, so windowed mode
+  // should too. YouTube's own dblclick handler does the opposite (it enters
+  // native fullscreen), so this has to intercept in the capture phase and stop
+  // the event before it reaches the player.
+  function onDblClick(e) {
+    try {
+      if (!cfg.enabled || !cfg.wfs) return;
+      if (nativeFs()) return;
+      const v = e.target && e.target.tagName === 'VIDEO' ? e.target : (e.target && e.target.closest && e.target.closest('video'));
+      if (!v) return;
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+      cfg.wfs = 0;
+      applyAll(); paintB();
+      save({ wfs: 0 });
+    } catch {}
+  }
+  try { document.addEventListener('dblclick', onDblClick, true); } catch {}
   // Hover pill for the injected button. YouTube paints .ytp-tooltip only when it
   // carries ytp-frosted-glass-fade-transition, which its own manager adds to the
   // buttons present at player build time. Ours is injected later, so without this
@@ -311,6 +368,7 @@
   }
   function cleanup() {
     tipHide();
+    hintHide();
     try { document.documentElement.classList.remove('frostline-th-wfs', 'frostline-th'); } catch {}
     try { const a = document.getElementById('frostline-th-wfs'); if (a) a.remove(); } catch {}
     try { const s = document.getElementById('frostline-th-str'); if (s) s.remove(); } catch {}

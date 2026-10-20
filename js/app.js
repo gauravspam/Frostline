@@ -509,14 +509,14 @@ function syncAccentDots(){const cur=store.get('accent','#3b82f6'),auto=store.get
 // The pool is far larger than the grid can show, so render a random sample of
 // ten and let Shuffle redraw it. The active wallpaper is pinned into the sample
 // so the highlighted tile keeps meaning something.
-(function(){const g=$('#bg-grid');if(!g)return;const N=10;let tiles=[],s=null;
-const mark=u=>{[...g.querySelectorAll('button[data-u]')].forEach(b=>b.classList.toggle('on',b.dataset.u===u));};
+(function(){const g=$('#bg-grid');if(!g)return;const N=10;let tiles=[];
+const mark=u=>{[...g.querySelectorAll('button')].forEach(b=>b.classList.toggle('on',b.dataset.u===u));};
 const paint=()=>{tiles.forEach(t=>t.remove());tiles=[];const act=store.get('bgCache',null);const n=act&&act.url&&act.url.includes('picsum.photos/')?act.url:null;
 const pool=BG_IDS.slice();const out=[];while(out.length<N&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
 if(n&&!out.some(i=>bgUrl(i,1920)===n))out[out.length-1]=Number(n.split('/id/')[1].split('/')[0]);
-out.forEach(id=>{const u=bgUrl(id,1920);const b=document.createElement('button');b.dataset.u=u;b.title='Use this wallpaper';b.style.backgroundImage=`url('${bgUrl(id,400)}')`;b.onclick=()=>{const credit='Photo on <b>Unsplash</b>';store.set('bgCache',{url:u,credit,ts:Date.now()});setBgUrl(u,credit);mark(u);};g.insertBefore(b,s);tiles.push(b);});
+out.forEach(id=>{const u=bgUrl(id,1920);const b=document.createElement('button');b.dataset.u=u;b.title='Use this wallpaper';b.style.backgroundImage=`url('${bgUrl(id,400)}')`;b.onclick=()=>{const credit='Photo on <b>Unsplash</b>';store.set('bgCache',{url:u,credit,ts:Date.now()});setBgUrl(u,credit);mark(u);};g.appendChild(b);tiles.push(b);});
 if(n)mark(n);};
-s=document.createElement('button');s.id='bg-shuffle';s.textContent='↻ Shuffle';s.onclick=paint;g.appendChild(s);paint();})();
+$('#bg-shuffle').onclick=paint;paint();})();
 $('#set-color').onchange=e=>{const v=e.target.value.trim();if(!v)return;store.set('bg','solid');$('#bg-layer').style.background=v.includes('gradient')?v:'#1a202c';if(CSS.supports('color',v))$('#bg-layer').style.background=v;};
 const BG_SWATCHES=['#0f172a','#1a202c','#3b0764','#7c2d12','#052e16','#0c4a6e','linear-gradient(135deg,#f97316,#ec4899)','linear-gradient(135deg,#06b6d4,#3b82f6)','linear-gradient(135deg,#8b5cf6,#ec4899)','linear-gradient(135deg,#22c55e,#15803d)','linear-gradient(135deg,#111827,#4b5563)','linear-gradient(135deg,#f59e0b,#ef4444)'];
 function applyBgSolid(v){store.set('bg','solid');$('#bg-layer').style.background=v;const t=$('#set-color');if(t)t.value=v;}
