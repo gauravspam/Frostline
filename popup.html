@@ -49,17 +49,14 @@
   .rbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
   .rbtn.pending{color:#ff453a;background:rgba(255,69,58,.14);animation:rpulse 1s ease-in-out infinite}
   .rbtn.busy{opacity:.5;pointer-events:none}
-  /* Disclosure arrow for the controls under a row. Points down when open, and
-     the rotation matches the Experimental Features caret above. */
-  .caret{width:24px;height:24px;border-radius:8px;border:none;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit;transition:.15s}
-  .caret:hover{background:rgba(118,118,128,.24);color:#fff}
-  .caret svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease}
-  .caret.open svg{transform:rotate(90deg)}
+  /* Disclosure arrow for the controls under a row. It shares the refresh
+     button's material so both read as the same kind of control, and points
+     the way the click will move the content. */
+  .caret svg{transition:transform .2s ease}
+  .caret.open svg{transform:rotate(180deg)}
   .caret:disabled{opacity:.35;cursor:default}
-  .caret:disabled:hover{background:transparent;color:rgba(255,255,255,.7)}
+  .caret:disabled:hover{background:rgba(118,118,128,.24);color:rgba(255,255,255,.7)}
   @keyframes rpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,69,58,.5)}50%{box-shadow:0 0 0 5px rgba(255,69,58,0)}}
-  .rnote{font-size:12px;color:#ff9f9a;margin:4px 0 2px;display:none}
-  .rnote.show{display:block}
   .exp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 2px 2px;cursor:pointer;font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.5px}
   .exp-head:hover{color:#c7c7cc}
   #exp-caret{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;opacity:.7}
@@ -76,8 +73,7 @@
   <div class="shell">
   <h1 class="sec">Shade<span id="pp-ver"></span></h1>
   <div class="card">
-  <div class="row"><span>Enable Shade</span><span class="rgroup"><button class="rbtn" id="pp-rdim" title="Re-apply Shade to every tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="caret" id="pp-shade-caret" aria-label="Show Shade options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></span></div>
-  <div class="rnote" id="pp-rdim-note">Shade state does not match this page. Reload the tab, or press refresh to re-apply.</div>
+  <div class="row"><span>Enable Shade</span><span class="rgroup"><button class="rbtn" id="pp-rdim" title="Re-apply Shade to every tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="rbtn caret" id="pp-shade-caret" aria-label="Show Shade options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><button class="tswitch" id="pp-toggle" aria-label="Enable Shade"><i></i></button></span></div>
   <div class="row" id="pp-dim-row"><input type="range" id="pp-intensity" min="0" max="100" step="1" value="40" /><span class="val" id="pp-val">40%</span></div>
   <div class="seg" id="pp-mode"><button data-m="dimmer">Dim</button><button data-m="reader">Reader</button><button data-m="blur">Blur</button></div>
   <div class="seg" id="pp-scope"><button data-s="page">Page</button><button data-s="media">Media</button></div>
@@ -85,7 +81,6 @@
   <h1 class="sec">Theater</h1>
   <div class="card">
   <div class="row"><span>Enable Theater</span><span class="rgroup"><button class="rbtn" id="pp-rt" title="Re-apply Theater to every YouTube tab and clear leftovers"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button><button class="tswitch" id="pp-t-toggle" aria-label="Enable Theater"><i></i></button></span></div>
-  <div class="rnote" id="pp-rt-note">Theater state does not match this page. Reload the tab, or press refresh to re-apply.</div>
   </div>
   <h1 class="sec exp-head" id="exp-head">
     <span class="exp-title">Experimental Features
@@ -94,15 +89,15 @@
   </h1>
   <div id="exp-body">
   <div class="card">
-  <div class="row"><span>Volume Boost</span><span class="rgroup"><button class="caret" id="pp-vol-caret" aria-label="Show Volume Boost options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button><button class="tswitch" id="pp-vol-toggle" aria-label="Volume Boost"><i></i></button></span></div>
+  <div class="row"><span>Volume Boost</span><span class="rgroup"><button class="rbtn caret" id="pp-vol-caret" aria-label="Show Volume Boost options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><button class="tswitch" id="pp-vol-toggle" aria-label="Volume Boost"><i></i></button></span></div>
   <div class="row" id="pp-vol-row"><input type="range" id="pp-vol-gain" min="100" max="300" step="5" value="100" /><span class="val" id="pp-vol-val">100%</span></div>
   <div class="row"><span>Ambient Light</span><span class="rgroup"><button class="tswitch" id="pp-amb-toggle" aria-label="Ambient Light"><i></i></button></span></div>
-  <div class="row"><span>Only Video</span><span class="rgroup"><button class="caret" id="pp-ov-caret" aria-label="Show Only Video options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button><button class="tswitch" id="pp-ov-toggle" aria-label="Only Video"><i></i></button></span></div>
+  <div class="row"><span>Only Video</span><span class="rgroup"><button class="rbtn caret" id="pp-ov-caret" aria-label="Show Only Video options" aria-expanded="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button><button class="tswitch" id="pp-ov-toggle" aria-label="Only Video"><i></i></button></span></div>
   <div class="row" id="pp-ov-row"><span class="sub">Hide Comments</span><span class="rgroup"><button class="tswitch" id="pp-ovhc-toggle" aria-label="Hide Comments"><i></i></button></span></div>
   </div>
   </div>
   </div>
 
-  <script src="js/popup.js?v=8"></script>
+  <script src="js/popup.js?v=9"></script>
 </body>
 </html>

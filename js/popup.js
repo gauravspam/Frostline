@@ -161,14 +161,11 @@ function paintTheater() {
 // The worker probes the resolved page state, because injected CSS outlives the
 // service worker: it can lose all record of a rule it is still responsible for.
 // That disagreement is what turns these buttons red.
-function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
+function wireRefresh(btnId, statusCmd, resetCmd) {
   const btn = document.querySelector('#' + btnId);
-  const note = document.querySelector('#' + noteId);
   if (!btn) return;
   const show = (st) => {
-    const bad = !!(st && st.mismatch);
-    btn.classList.toggle('pending', bad);
-    if (note) note.classList.toggle('show', bad);
+    btn.classList.toggle('pending', !!(st && st.mismatch));
   };
   btn.onclick = () => {
     btn.classList.add('busy');
@@ -196,8 +193,8 @@ function wireRefresh(btnId, noteId, statusCmd, resetCmd) {
     });
   } catch {}
 }
-wireRefresh('pp-rdim', 'pp-rdim-note', 'shade-status', 'shade-reset');
-wireRefresh('pp-rt', 'pp-rt-note', 'theater-status', 'theater-reset');
+wireRefresh('pp-rdim', 'shade-status', 'shade-reset');
+wireRefresh('pp-rt', 'theater-status', 'theater-reset');
 document.querySelector('#pp-t-toggle').onclick = () => { th.enabled = th.enabled ? 0 : 1; saveTh(); paintTheater(); };
 // Adopt the worker's copy as the starting state, mirroring adoptDim/adoptExp:
 // a fresh install writes enabled here, which localStorage alone never sees.
