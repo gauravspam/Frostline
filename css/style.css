@@ -465,7 +465,7 @@ body.search-focus #search-wrap{z-index:9}
 .hol-list li{padding:9px 12px;border-radius:10px;font-size:13px;color:#ddd;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hol-list li:hover,.hol-list li.kbd{background:rgba(255,255,255,.09);color:#fff}
 .hol-list li.on{color:#fff;background:rgba(255,255,255,.12)}
-.icon-btn{width:36px;height:36px;flex-shrink:0;border-radius:12px;background:rgba(255,255,255,.10);border:none;color:rgba(255,255,255,.7);font-size:14px;cursor:pointer;display:grid;place-items:center}
+.icon-btn{width:36px;height:36px;flex-shrink:0;border-radius:12px;background:rgba(255,255,255,.10);border:none;color:rgba(255,255,255,.7);font-size:14px;cursor:pointer;display:grid;place-items:center;text-decoration:none}
 .icon-btn:hover{background:rgba(255,255,255,.15);color:#fff}
 .icon-btn.spinning{animation:spin360 1s linear infinite;pointer-events:none}
 #gh-statsrow{display:flex;align-items:center;gap:16px;margin-bottom:12px;padding:0 4px}
@@ -503,7 +503,7 @@ body.search-focus #search-wrap{z-index:9}
 #notes-search::placeholder{color:rgba(255,255,255,.25)}
 #notes-count{font-size:10px;color:rgba(255,255,255,.4);white-space:nowrap}
 #notes-quick{border-radius:12px;background:rgba(0,0,0,.30);border:1px solid rgba(255,255,255,.10);padding:12px;margin-bottom:12px}
-#notes-input{width:100%;background:transparent;border:none;outline:none;resize:none;color:rgba(255,255,255,.85);font-size:13px;font-family:inherit}
+#notes-input{width:100%;background:transparent;border:none;outline:none;resize:none;color:rgba(255,255,255,.85);font-size:13px;font-family:inherit;height:80px}
 #notes-input::placeholder{color:rgba(255,255,255,.25)}
 #notes-addrow{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
 #note-toolsbar{display:flex;gap:4px;margin-bottom:8px;align-items:center}
@@ -514,7 +514,9 @@ body.search-focus #search-wrap{z-index:9}
 #note-mode-btn{display:grid!important;place-items:center}
 #note-mode button{background:rgba(255,255,255,.06);border:none;color:rgba(255,255,255,.55);border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer}
 #note-mode button.on{background:rgba(255,255,255,.15);color:#fff}
-#note-preview{min-height:66px}
+/* Matches #notes-input: the box must not change size when the eye toggles
+   between writing and reading. */
+#note-preview{height:80px;overflow-y:auto}
 .note-body b{color:#fff}.note-body i{color:rgba(255,255,255,.75)}
 #notes-add{background:rgba(255,255,255,.10);border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer}
 #notes-add:hover{background:rgba(255,255,255,.15)}
