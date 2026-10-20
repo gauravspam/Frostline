@@ -205,10 +205,14 @@ try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.r
 // ---- Experimental Features: volume boost + ambient light ----
 // The content script reacts to chrome.storage writes; localStorage here is
 // only for synchronous first paint, matching dim/th.
-let exp = Object.assign({ volume: 0, volGain: 100, ambient: 0, expOpen: 0 }, store.get('expCfg', {}));
+let exp = Object.assign({ volume: 0, volGain: 100, ambient: 0, expOpen: 0, onlyVideo: 0, ovHideComments: 0 }, store.get('expCfg', {}));
 function expEnsureShape(){
   exp.volume = exp.volume ? 1 : 0;
   exp.ambient = exp.ambient ? 1 : 0;
+  exp.onlyVideo = exp.onlyVideo ? 1 : 0;
+  // Only takes effect while Only Video is on: the child row is not rendered
+  // otherwise, so a stored value cannot hide comments on its own.
+  exp.ovHideComments = exp.ovHideComments ? 1 : 0;
   exp.expOpen = exp.expOpen ? 1 : 0;
   const n = typeof exp.volGain === 'number' && isFinite(exp.volGain) ? Math.round(exp.volGain) : 100;
   exp.volGain = Math.min(300, Math.max(100, n));
@@ -216,7 +220,7 @@ function expEnsureShape(){
 expEnsureShape();
 function saveExp(){
   expEnsureShape();
-  const clean = { volume: exp.volume ? 1 : 0, volGain: exp.volGain, ambient: exp.ambient ? 1 : 0, expOpen: exp.expOpen ? 1 : 0 };
+  const clean = { volume: exp.volume ? 1 : 0, volGain: exp.volGain, ambient: exp.ambient ? 1 : 0, expOpen: exp.expOpen ? 1 : 0, onlyVideo: exp.onlyVideo ? 1 : 0, ovHideComments: exp.ovHideComments ? 1 : 0 };
   exp = clean;
   store.set('expCfg', clean);
   try { chrome.storage.local.set({ frostline_expCfg: clean }); } catch {}
@@ -240,6 +244,14 @@ function paintExp(){
   if (gv) gv.classList.toggle('preview', exp.volGain > 200);
   const at = document.querySelector('#pp-amb-toggle');
   if (at) at.classList.toggle('on', !!exp.ambient);
+  const ot = document.querySelector('#pp-ov-toggle');
+  if (ot) ot.classList.toggle('on', !!exp.onlyVideo);
+  const ohc = document.querySelector('#pp-ovhc-toggle');
+  if (ohc) ohc.classList.toggle('on', !!exp.ovHideComments);
+  // Same gate as the volume slider: the child toggle only exists while its
+  // parent is on, so a disabled Only Video cannot leave a stray switch visible.
+  const ovc = document.querySelector('#pp-ov-row');
+  if (ovc) ovc.style.display = exp.onlyVideo ? '' : 'none';
   const head = document.querySelector('#exp-head');
   if (head) head.classList.toggle('open', !!exp.expOpen);
   const body = document.querySelector('#exp-body');
@@ -262,6 +274,14 @@ document.querySelector('#pp-vol-gain').oninput = e => {
   paintExp(); 
 };
 document.querySelector('#pp-amb-toggle').onclick = () => { exp.ambient = exp.ambient ? 0 : 1; saveExp(); paintExp(); };
+document.querySelector('#pp-ov-toggle').onclick = () => {
+  exp.onlyVideo = exp.onlyVideo ? 0 : 1;
+  // Turning Only Video on deliberately leaves Hide Comments as it was: enabling
+  // the parent must not silently strip the comments too.
+  saveExp();
+  paintExp();
+};
+document.querySelector('#pp-ovhc-toggle').onclick = () => { exp.ovHideComments = exp.ovHideComments ? 0 : 1; saveExp(); paintExp(); };
 try {
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area === 'local' && ch.frostline_expCfg && ch.frostline_expCfg.newValue) {

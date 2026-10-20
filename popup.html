@@ -42,6 +42,8 @@
   .tswitch.on{background:#34c759}
   .tswitch.on i{left:20px}
   .rgroup{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  /* Indents the child toggle so it reads as nested under its parent row. */
+  #pp-ov-row .sub{padding-left:16px;color:#c7c7cc}
   .rbtn{width:28px;height:28px;border-radius:10px;border:none;background:rgba(118,118,128,.24);color:rgba(255,255,255,.7);cursor:pointer;display:grid;place-items:center;padding:0;font-family:inherit;transition:.15s}
   .rbtn:hover{background:rgba(118,118,128,.4);color:#fff}
   .rbtn svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -55,7 +57,7 @@
   #exp-caret{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s ease;opacity:.7}
   .exp-head.open #exp-caret{transform:rotate(90deg)}
   #exp-body{max-height:0;overflow:hidden;transition:max-height .22s ease}
-  #exp-body.open{max-height:320px}
+  #exp-body.open{max-height:400px}
   .exp-title{display:flex;align-items:center;gap:8px}
   /* Compact density so the open section stays under the 600px popup limit. */
   #exp-head{margin:6px 4px 2px;padding-top:6px}
@@ -87,10 +89,12 @@
   <div class="row"><span>Volume Boost</span><span class="rgroup"><button class="tswitch" id="pp-vol-toggle" aria-label="Volume Boost"><i></i></button></span></div>
   <div class="row" id="pp-vol-row"><input type="range" id="pp-vol-gain" min="100" max="300" step="5" value="100" /><span class="val" id="pp-vol-val">100%</span></div>
   <div class="row"><span>Ambient Light</span><span class="rgroup"><button class="tswitch" id="pp-amb-toggle" aria-label="Ambient Light"><i></i></button></span></div>
+  <div class="row"><span>Only Video</span><span class="rgroup"><button class="tswitch" id="pp-ov-toggle" aria-label="Only Video"><i></i></button></span></div>
+  <div class="row" id="pp-ov-row"><span class="sub">Hide Comments</span><span class="rgroup"><button class="tswitch" id="pp-ovhc-toggle" aria-label="Hide Comments"><i></i></button></span></div>
   </div>
   </div>
   </div>
 
-  <script src="js/popup.js?v=6"></script>
+  <script src="js/popup.js?v=7"></script>
 </body>
 </html>

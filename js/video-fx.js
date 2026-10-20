@@ -5,7 +5,7 @@
   if (window.__frostlineVidFx) return;
   window.__frostlineVidFx = 1;
   const KEY = 'frostline_expCfg';
-  const DEF = { volume: 0, volGain: 100, ambient: 0, expOpen: 0 };
+  const DEF = { volume: 0, volGain: 100, ambient: 0, expOpen: 0, onlyVideo: 0, ovHideComments: 0 };
   // Storage is user-editable, so clamp on read: nothing out of range may reach an AudioParam.
   const clampGain = (v) => {
     const n = typeof v === 'number' && isFinite(v) ? Math.round(v) : 100;
@@ -22,7 +22,9 @@
             volume: raw.volume ? 1 : 0,
             volGain: clampGain(raw.volGain),
             ambient: raw.ambient ? 1 : 0,
-            expOpen: raw.expOpen ? 1 : 0
+            expOpen: raw.expOpen ? 1 : 0,
+            onlyVideo: raw.onlyVideo ? 1 : 0,
+            ovHideComments: raw.ovHideComments ? 1 : 0
           };
           window.__frostlineFx.cfg = cfg;
         } catch {}
@@ -46,6 +48,8 @@
     next.volume = next.volume ? 1 : 0;
     next.ambient = next.ambient ? 1 : 0;
     next.expOpen = next.expOpen ? 1 : 0;
+    next.onlyVideo = next.onlyVideo ? 1 : 0;
+    next.ovHideComments = next.ovHideComments ? 1 : 0;
     cfg = next;
     window.__frostlineFx.cfg = cfg;
     try { chrome.storage.local.set({ [KEY]: cfg }); } catch {}
@@ -350,6 +354,59 @@
       } else ambTeardown();
     } catch {}
   }
+  // Only Video: strip the watch page back to the player. YouTube's renderer
+  // destroys and rebuilds these nodes on navigation and on lazy render, so the
+  // hide is driven from one list each pass instead of being assumed to stick.
+  const OV_BASE = '#secondary, ytd-watch-metadata, ytd-video-primary-info-renderer, ytd-video-secondary-info-renderer';
+  const OV_COMMENTS = 'ytd-comments';
+  // Saved per element so disabling restores exactly the inline value that was
+  // there, not a blanket inline:style that would fight YouTube's own rules.
+  const ovSaved = new Map();
+  let ovObs = null, ovTimer = 0;
+  function ovHide(sel) {
+    try {
+      document.querySelectorAll(sel).forEach((el) => {
+        if (ovSaved.has(el)) return;
+        ovSaved.set(el, el.style.display);
+        el.style.display = 'none';
+      });
+    } catch {}
+  }
+  function ovRestore(sel) {
+    try {
+      ovSaved.forEach((v, el) => {
+        if (sel && !el.matches(sel)) return;
+        try { el.style.display = v; } catch {}
+        ovSaved.delete(el);
+      });
+    } catch {}
+  }
+  function ovSyncSoon() {
+    if (ovTimer) return;
+    ovTimer = setTimeout(() => { ovTimer = 0; ovApply(); }, 60);
+  }
+  function ovApply() {
+    try {
+      // Shorts already is a lone player on a different DOM, so scoping the
+      // selectors to the watch page is what keeps this from stranding an
+      // observer there.
+      const active = cfg.onlyVideo && isWatchPage() && !location.pathname.startsWith('/shorts/');
+      if (!active) {
+        ovRestore(null);
+        if (ovObs) { try { ovObs.disconnect(); } catch {} ovObs = null; }
+        return;
+      }
+      // Bound the map: nodes YouTube dropped are gone for good.
+      ovSaved.forEach((v, el) => { if (!el.isConnected) ovSaved.delete(el); });
+      ovHide(OV_BASE);
+      if (cfg.ovHideComments) ovHide(OV_COMMENTS);
+      else ovRestore(OV_COMMENTS);
+      if (!ovObs) {
+        ovObs = new MutationObserver(ovSyncSoon);
+        ovObs.observe(document.documentElement, { childList: true, subtree: true });
+      }
+    } catch {}
+  }
   try {
     document.addEventListener('fullscreenchange', ambApply);
     document.addEventListener('webkitfullscreenchange', ambApply);
@@ -357,14 +414,16 @@
   // YouTube routes home to /watch without a document load, so the boot-time
   // apply ran while isWatchPage() was false and armed nothing. Without this the
   // glow only appeared once the popup wrote storage and re-triggered refresh().
-  try { document.addEventListener('yt-navigate-finish', ambApply); } catch {}
+  // Only Video rides the same two signals for the same reason.
+  function onRoute() { try { ambApply(); } catch {} try { ovApply(); } catch {} }
+  try { document.addEventListener('yt-navigate-finish', onRoute); } catch {}
   let ambLastUrl = '';
   try { ambLastUrl = location.href; } catch {}
   setInterval(() => {
     try {
       if (location.href === ambLastUrl) return;
       ambLastUrl = location.href;
-      ambApply();
+      onRoute();
     } catch {}
   }, 1000);
   // The tick only re-syncs up to 10 times a second, so fast page or sidebar
@@ -546,6 +605,7 @@
     loadCfg(() => {
       try { ambApply(); } catch {}
       try { volApply(); } catch {}
+      try { ovApply(); } catch {}
       try { if (ambBooted && cfg.ambient && !was) ytAmbientOff(); } catch {}
       ambBooted = true;
     });
