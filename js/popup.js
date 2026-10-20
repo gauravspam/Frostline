@@ -62,7 +62,7 @@ function paint() {
   const sc = document.querySelector('#pp-scope');
   if (sc) sc.style.display = shadeOpen ? '' : 'none';
   const dc = document.querySelector('#pp-shade-caret');
-  if (dc) { dc.classList.toggle('open', !!ui.shade); dc.setAttribute('aria-expanded', ui.shade ? 'true' : 'false'); dc.disabled = !dim.enabled; }
+  if (dc) { dc.classList.toggle('open', !!ui.shade); dc.classList.toggle('away', !dim.enabled); dc.setAttribute('aria-expanded', ui.shade ? 'true' : 'false'); }
   const r = document.querySelector('#pp-intensity');
   dimEnsureShapeP();
   if (r && document.activeElement !== r) {
@@ -212,7 +212,7 @@ try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.r
 // ---- Experimental Features: volume boost + ambient light ----
 // The content script reacts to chrome.storage writes; localStorage here is
 // only for synchronous first paint, matching dim/th.
-let exp = Object.assign({ volume: 0, volGain: 100, ambient: 0, expOpen: 0, onlyVideo: 0, ovHideComments: 0 }, store.get('expCfg', {}));
+let exp = Object.assign({ volume: 0, volGain: 100, ambient: 0, onlyVideo: 0, ovHideComments: 0 }, store.get('expCfg', {}));
 function expEnsureShape(){
   exp.volume = exp.volume ? 1 : 0;
   exp.ambient = exp.ambient ? 1 : 0;
@@ -220,14 +220,13 @@ function expEnsureShape(){
   // Only takes effect while Only Video is on: the child row is not rendered
   // otherwise, so a stored value cannot hide comments on its own.
   exp.ovHideComments = exp.ovHideComments ? 1 : 0;
-  exp.expOpen = exp.expOpen ? 1 : 0;
   const n = typeof exp.volGain === 'number' && isFinite(exp.volGain) ? Math.round(exp.volGain) : 100;
   exp.volGain = Math.min(300, Math.max(100, n));
 }
 expEnsureShape();
 function saveExp(){
   expEnsureShape();
-  const clean = { volume: exp.volume ? 1 : 0, volGain: exp.volGain, ambient: exp.ambient ? 1 : 0, expOpen: exp.expOpen ? 1 : 0, onlyVideo: exp.onlyVideo ? 1 : 0, ovHideComments: exp.ovHideComments ? 1 : 0 };
+  const clean = { volume: exp.volume ? 1 : 0, volGain: exp.volGain, ambient: exp.ambient ? 1 : 0, onlyVideo: exp.onlyVideo ? 1 : 0, ovHideComments: exp.ovHideComments ? 1 : 0 };
   exp = clean;
   store.set('expCfg', clean);
   try { chrome.storage.local.set({ frostline_expCfg: clean }); } catch {}
@@ -243,7 +242,7 @@ function paintExp(){
   const volOpen = exp.volume && !!ui.vol;
   if (grow) grow.style.display = volOpen ? '' : 'none';
   const vc = document.querySelector('#pp-vol-caret');
-  if (vc) { vc.classList.toggle('open', !!ui.vol); vc.setAttribute('aria-expanded', ui.vol ? 'true' : 'false'); vc.disabled = !exp.volume; }
+  if (vc) { vc.classList.toggle('open', !!ui.vol); vc.classList.toggle('away', !exp.volume); vc.setAttribute('aria-expanded', ui.vol ? 'true' : 'false'); }
   if (g && document.activeElement !== g) {
     g.value = exp.volGain;
     // Update fill gradient: 100->0%, 300->100%
@@ -265,13 +264,8 @@ function paintExp(){
   const ovc = document.querySelector('#pp-ov-row');
   if (ovc) ovc.style.display = ovOpen ? '' : 'none';
   const oc = document.querySelector('#pp-ov-caret');
-  if (oc) { oc.classList.toggle('open', !!ui.ov); oc.setAttribute('aria-expanded', ui.ov ? 'true' : 'false'); oc.disabled = !exp.onlyVideo; }
-  const head = document.querySelector('#exp-head');
-  if (head) head.classList.toggle('open', !!exp.expOpen);
-  const body = document.querySelector('#exp-body');
-  if (body) body.classList.toggle('open', !!exp.expOpen);
+  if (oc) { oc.classList.toggle('open', !!ui.ov); oc.classList.toggle('away', !exp.onlyVideo); oc.setAttribute('aria-expanded', ui.ov ? 'true' : 'false'); }
 }
-document.querySelector('#exp-head').onclick = () => { exp.expOpen = exp.expOpen ? 0 : 1; saveExp(); paintExp(); };
 document.querySelector('#pp-vol-toggle').onclick = () => {
   exp.volume = exp.volume ? 0 : 1;
   // Enabling at the 100% floor would be a silent no-op (unity gain), which
@@ -313,7 +307,8 @@ try {
   });
 } catch {}
 // Adopt the worker's copy as the starting state, mirroring adoptDim: a fresh
-// install writes expOpen expanded, which localStorage alone would never see.
+// install writes the default experimental config, which localStorage alone
+// would never see.
 function adoptExp(next) {
   if (!next || typeof next !== 'object') return;
   exp = Object.assign(exp, next);

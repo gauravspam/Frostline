@@ -5,7 +5,7 @@
   if (window.__frostlineVidFx) return;
   window.__frostlineVidFx = 1;
   const KEY = 'frostline_expCfg';
-  const DEF = { volume: 0, volGain: 100, ambient: 0, expOpen: 0, onlyVideo: 0, ovHideComments: 0 };
+  const DEF = { volume: 0, volGain: 100, ambient: 0, onlyVideo: 0, ovHideComments: 0 };
   // Storage is user-editable, so clamp on read: nothing out of range may reach an AudioParam.
   const clampGain = (v) => {
     const n = typeof v === 'number' && isFinite(v) ? Math.round(v) : 100;
@@ -22,7 +22,6 @@
             volume: raw.volume ? 1 : 0,
             volGain: clampGain(raw.volGain),
             ambient: raw.ambient ? 1 : 0,
-            expOpen: raw.expOpen ? 1 : 0,
             onlyVideo: raw.onlyVideo ? 1 : 0,
             ovHideComments: raw.ovHideComments ? 1 : 0
           };
@@ -47,7 +46,6 @@
     next.volGain = clampGain(next.volGain);
     next.volume = next.volume ? 1 : 0;
     next.ambient = next.ambient ? 1 : 0;
-    next.expOpen = next.expOpen ? 1 : 0;
     next.onlyVideo = next.onlyVideo ? 1 : 0;
     next.ovHideComments = next.ovHideComments ? 1 : 0;
     cfg = next;
