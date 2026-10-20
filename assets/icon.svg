@@ -1,0 +1,79 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="tile" x1="18" y1="8" x2="112" y2="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0D1B3E"/>
+      <stop offset=".48" stop-color="#070D20"/>
+      <stop offset="1" stop-color="#04060F"/>
+    </linearGradient>
+    <radialGradient id="auroraA" cx="26%" cy="20%" r="64%">
+      <stop offset="0" stop-color="#2DD9FF" stop-opacity=".3"/>
+      <stop offset=".6" stop-color="#147EA8" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#061019" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="auroraB" cx="82%" cy="86%" r="58%">
+      <stop offset="0" stop-color="#9B7BFF" stop-opacity=".26"/>
+      <stop offset=".62" stop-color="#5B3DB5" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#080A18" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="28" y1="4" x2="100" y2="124" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D7FAFF" stop-opacity=".72"/>
+      <stop offset=".35" stop-color="#8FE8FF" stop-opacity=".2"/>
+      <stop offset=".7" stop-color="#FFFFFF" stop-opacity=".06"/>
+      <stop offset="1" stop-color="#B8A4FF" stop-opacity=".34"/>
+    </linearGradient>
+    <linearGradient id="crystal" x1="44" y1="18" x2="86" y2="112" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F2FEFF"/>
+      <stop offset=".34" stop-color="#9FF0FF"/>
+      <stop offset=".7" stop-color="#8BC8FF"/>
+      <stop offset="1" stop-color="#B49BFF"/>
+    </linearGradient>
+    <linearGradient id="core" x1="54" y1="50" x2="75" y2="78" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#8DEAFF"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="12" y1="16" x2="112" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".05"/>
+      <stop offset=".5" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".02"/>
+    </linearGradient>
+    <filter id="cglow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+    <clipPath id="clip">
+      <rect x="4" y="4" width="120" height="120" rx="27"/>
+    </clipPath>
+    <clipPath id="star">
+      <path d="M64 13L74 55L115 64L74 73L64 115L54 73L13 64L54 55Z"/>
+    </clipPath>
+  </defs>
+
+  <g transform="translate(12.8 12.8) scale(0.8)">
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#tile)"/>
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#auroraA)"/>
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#auroraB)"/>
+  <path d="M22 24L106 88V124H22Z" fill="url(#sheen)"/>
+
+  <g clip-path="url(#clip)">
+    <path d="M64 13L74 55L115 64L74 73L64 115L54 73L13 64L54 55Z"
+          fill="#64DEFF" fill-opacity=".34" filter="url(#cglow)"/>
+    <path d="M64 13L74 55L115 64L74 73L64 115L54 73L13 64L54 55Z" fill="url(#crystal)"/>
+
+    <g clip-path="url(#star)">
+      <path d="M64 13L74 55L115 64L74 73L64 115Z" fill="#9B7BFF" fill-opacity=".18"/>
+      <path d="M64 13L54 55L13 64L54 73L64 115Z" fill="#DFFCFF" fill-opacity=".14"/>
+      <path d="M64 13L74 55L64 64Z" fill="#FFFFFF" fill-opacity=".1"/>
+      <path d="M13 64L54 55L64 64Z" fill="#FFFFFF" fill-opacity=".06"/>
+      <path d="M115 64L74 55L64 64Z" fill="#9B7BFF" fill-opacity=".13"/>
+      <path d="M64 115L74 73L64 64Z" fill="#9B7BFF" fill-opacity=".08"/>
+      <path d="M64 13L74 55L115 64L74 73L64 115L54 73L13 64L54 55Z"
+            fill="none" stroke="#FFFFFF" stroke-opacity=".45" stroke-width="1"/>
+    </g>
+
+    <path d="M64 51L75 64L64 77L53 64Z" fill="url(#core)" fill-opacity=".9"/>
+    <path d="M64 51L75 64L64 77L53 64Z" fill="none" stroke="#FFFFFF" stroke-opacity=".72" stroke-width=".9"/>
+    <path d="M64 57L70 64L64 71L58 64Z" fill="#FFFFFF" fill-opacity=".17"/>
+  </g>
+
+  <rect x="4.8" y="4.8" width="118.4" height="118.4" rx="26.2" fill="none" stroke="url(#rim)" stroke-width="1.6"/>
+  </g>
+</svg>
