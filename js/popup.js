@@ -208,7 +208,6 @@ try {
   chrome.storage.local.get('frostline_ytCfg', o => { try { adoptYt(o && o.frostline_ytCfg); } catch {} paintTheater(); });
 } catch {}
 paintTheater();
-try{const pv=document.querySelector('#pp-ver');if(pv)pv.textContent='v'+chrome.runtime.getManifest().version;}catch{}
 // ---- Experimental Features: volume boost + ambient light ----
 // The content script reacts to chrome.storage writes; localStorage here is
 // only for synchronous first paint, matching dim/th.
