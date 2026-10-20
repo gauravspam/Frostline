@@ -3,6 +3,12 @@ const store = {
   get: (k, d) => { try { const v = localStorage.getItem('frostline_' + k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem('frostline_' + k, JSON.stringify(v)); } catch {} },
 };
+// Disclosure state for the collapsible rows. These are view preferences rather
+// than feature state, so they live in their own store and never reach the
+// shared configs the worker and the content script also write.
+const UI_DEF = { shade: 1, vol: 1, ov: 1 };
+let ui = Object.assign({}, UI_DEF, store.get('popupUI', {}));
+function saveUi() { store.set('popupUI', ui); try { chrome.storage.local.set({ frostline_popupUI: ui }); } catch {} }
 let dim = Object.assign({ enabled: 0, intensity: 40, white: 1, dark: 0, fx: { dimmer: 1 }, vals: { dimmer: 0, reader: 0, blur: 0 }, edit: 'dimmer', mode: 'dimmer', scope: 'page' }, store.get('dimmerCfg', {}));
 function dimEnsureShapeP(){
   dim.fx = dim.fx || {};
@@ -46,13 +52,17 @@ function paint() {
   const t = document.querySelector('#pp-toggle');
   if (t) t.classList.toggle('on', !!dim.enabled);
   // Shade sub-controls only exist while Shade is on, mirroring the Volume
-  // Boost slider pattern: no toggle, no controls.
+  // Boost slider pattern: no toggle, no controls. The caret is a second,
+  // independent gate, so the block can also be folded away while Shade is on.
+  const shadeOpen = dim.enabled && !!ui.shade;
   const dr = document.querySelector('#pp-dim-row');
-  if (dr) dr.style.display = dim.enabled ? '' : 'none';
+  if (dr) dr.style.display = shadeOpen ? '' : 'none';
   const md = document.querySelector('#pp-mode');
-  if (md) md.style.display = dim.enabled ? '' : 'none';
+  if (md) md.style.display = shadeOpen ? '' : 'none';
   const sc = document.querySelector('#pp-scope');
-  if (sc) sc.style.display = dim.enabled ? '' : 'none';
+  if (sc) sc.style.display = shadeOpen ? '' : 'none';
+  const dc = document.querySelector('#pp-shade-caret');
+  if (dc) { dc.classList.toggle('open', !!ui.shade); dc.setAttribute('aria-expanded', ui.shade ? 'true' : 'false'); dc.disabled = !dim.enabled; }
   const r = document.querySelector('#pp-intensity');
   dimEnsureShapeP();
   if (r && document.activeElement !== r) {
@@ -232,7 +242,11 @@ function paintExp(){
   const g = document.querySelector('#pp-vol-gain');
   const grow = document.querySelector('#pp-vol-row');
   // The gain slider only exists while Volume Boost is on: no toggle, no slider.
-  if (grow) grow.style.display = exp.volume ? '' : 'none';
+  // The caret folds it away as well.
+  const volOpen = exp.volume && !!ui.vol;
+  if (grow) grow.style.display = volOpen ? '' : 'none';
+  const vc = document.querySelector('#pp-vol-caret');
+  if (vc) { vc.classList.toggle('open', !!ui.vol); vc.setAttribute('aria-expanded', ui.vol ? 'true' : 'false'); vc.disabled = !exp.volume; }
   if (g && document.activeElement !== g) {
     g.value = exp.volGain;
     // Update fill gradient: 100->0%, 300->100%
@@ -250,8 +264,11 @@ function paintExp(){
   if (ohc) ohc.classList.toggle('on', !!exp.ovHideComments);
   // Same gate as the volume slider: the child toggle only exists while its
   // parent is on, so a disabled Only Video cannot leave a stray switch visible.
+  const ovOpen = exp.onlyVideo && !!ui.ov;
   const ovc = document.querySelector('#pp-ov-row');
-  if (ovc) ovc.style.display = exp.onlyVideo ? '' : 'none';
+  if (ovc) ovc.style.display = ovOpen ? '' : 'none';
+  const oc = document.querySelector('#pp-ov-caret');
+  if (oc) { oc.classList.toggle('open', !!ui.ov); oc.setAttribute('aria-expanded', ui.ov ? 'true' : 'false'); oc.disabled = !exp.onlyVideo; }
   const head = document.querySelector('#exp-head');
   if (head) head.classList.toggle('open', !!exp.expOpen);
   const body = document.querySelector('#exp-body');
@@ -282,6 +299,14 @@ document.querySelector('#pp-ov-toggle').onclick = () => {
   paintExp();
 };
 document.querySelector('#pp-ovhc-toggle').onclick = () => { exp.ovHideComments = exp.ovHideComments ? 0 : 1; saveExp(); paintExp(); };
+// Disclosure carets fold each block's sub-controls away. They are view state,
+// so they are kept out of the feature configs the worker also writes.
+const cShade = document.querySelector('#pp-shade-caret');
+if (cShade) cShade.onclick = () => { ui.shade = ui.shade ? 0 : 1; saveUi(); paint(); };
+const cVol = document.querySelector('#pp-vol-caret');
+if (cVol) cVol.onclick = () => { ui.vol = ui.vol ? 0 : 1; saveUi(); paintExp(); };
+const cOv = document.querySelector('#pp-ov-caret');
+if (cOv) cOv.onclick = () => { ui.ov = ui.ov ? 0 : 1; saveUi(); paintExp(); };
 try {
   chrome.storage.onChanged.addListener((ch, area) => {
     if (area === 'local' && ch.frostline_expCfg && ch.frostline_expCfg.newValue) {
@@ -300,5 +325,10 @@ function adoptExp(next) {
 }
 try {
   chrome.storage.local.get('frostline_expCfg', o => { try { adoptExp(o && o.frostline_expCfg); } catch {} paintExp(); });
+} catch {}
+// Same for the disclosure state: localStorage alone would miss a value written
+// by an earlier session that only reached chrome.storage.
+try {
+  chrome.storage.local.get('frostline_popupUI', o => { try { if (o && o.frostline_popupUI) { ui = Object.assign({}, UI_DEF, o.frostline_popupUI); store.set('popupUI', ui); } } catch {} paint(); paintExp(); });
 } catch {}
 paintExp();
