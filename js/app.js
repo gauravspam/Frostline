@@ -367,7 +367,7 @@ overlay.onclick = closeAllNew; $$('.m-close').forEach(b=>b.onclick=closeAllNew);
 $('#settings-btn').onclick=openDrawer;
 $('#dock-grid').onclick=()=>openModal('shortcuts-modal');
 const _ssc=$('#set-save-close');if(_ssc)_ssc.onclick=closeAllNew;
-const SET_LABELS={background:'Background',display:'Display',weather:'Weather',widgets:'Widgets',github:'Github',prefs:'Prefs',discard:'Discard',dimmer:'Shade',yt:'Theater',backup:'Backup'};
+const SET_LABELS={background:'Background',display:'Display',weather:'Weather',widgets:'Widgets',github:'GitHub',prefs:'Preferences',discard:'Discard',dimmer:'Shade',yt:'Theater',backup:'Backup'};
 $$('.set-tabs button').forEach(b=>{if(!b.querySelector('span')){const s=document.createElement('span');s.textContent=b.title||b.dataset.tab;b.appendChild(s);}});
 function syncSettingsTitle(t){const h=$('#settings-title');if(h)h.textContent=SET_LABELS[t]||t;}
 function flashSettingsTab(){const p=$('#settings-modal');if(!p)return;p.classList.remove('tab-flash');void p.offsetWidth;p.classList.add('tab-flash');}

@@ -367,8 +367,14 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 #settings-modal .set-head h2{font-size:20px;font-weight:600;color:rgba(255,255,255,.9);flex:1}
 #settings-modal .m-close{width:32px;height:32px;border-radius:8px;border:none;color:rgba(255,255,255,.5)}
 #settings-modal .m-close:hover{background:rgba(255,255,255,.1);color:rgba(255,255,255,.85)}
-#settings-modal .set-tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;padding:10px 22px 14px;border-bottom:1px solid rgba(255,255,255,.08);position:relative}
-.set-glider{position:absolute;left:0;top:0;width:0;height:0;border-radius:12px;pointer-events:none;opacity:0;background:linear-gradient(180deg,rgba(255,255,255,.20),rgba(255,255,255,.06));backdrop-filter:blur(30px) saturate(1.8);-webkit-backdrop-filter:blur(30px) saturate(1.8);border:1px solid rgba(255,255,255,.35);box-shadow:0 8px 24px rgba(0,0,0,.35),inset 0 1px 1px rgba(255,255,255,.6);transition:left .5s cubic-bezier(.3,1.3,.4,1),top .5s cubic-bezier(.3,1.3,.4,1),width .5s cubic-bezier(.3,1.3,.4,1),height .5s cubic-bezier(.3,1.3,.4,1),opacity .2s}
+/* One track holding all ten sections reads as a single control. Ten separate
+   bordered pills read as ten competing objects instead. minmax(0,1fr) keeps
+   every column equal: a bare 1fr floors the track at the label's min-content
+   width, so the longest label would widen its column and stagger the rows. */
+#settings-modal .set-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:5px;margin:10px 22px 12px;border-radius:16px;background:rgba(255,255,255,.05);backdrop-filter:blur(18px) saturate(1.5);-webkit-backdrop-filter:blur(18px) saturate(1.5);box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),0 8px 24px rgba(0,0,0,.18);position:relative}
+/* The glider is the only selection indicator, so it slides between cells
+   instead of the active button painting a second highlight over the top. */
+.set-glider{position:absolute;left:0;top:0;width:0;height:0;border-radius:11px;pointer-events:none;opacity:0;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 34%,transparent),color-mix(in srgb,var(--accent) 14%,transparent));backdrop-filter:blur(24px) saturate(1.8);-webkit-backdrop-filter:blur(24px) saturate(1.8);border:1px solid color-mix(in srgb,var(--accent) 58%,transparent);box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 1px 0 rgba(255,255,255,.3);transition:left .5s cubic-bezier(.3,1.3,.4,1),top .5s cubic-bezier(.3,1.3,.4,1),width .5s cubic-bezier(.3,1.3,.4,1),height .5s cubic-bezier(.3,1.3,.4,1),opacity .2s}
 
 #search-wrap{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none}
 #search-form{pointer-events:auto;display:flex;align-items:center;gap:10px;width:44px;padding:8px 16px;border-radius:999px;background:rgba(255,255,255,.24);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid rgba(255,255,255,.25);color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.25);transition:width .38s cubic-bezier(.2,.8,.2,1),border-color .2s}
@@ -394,15 +400,24 @@ body.search-focus #search-wrap{z-index:9}
 #search-suggest li.engine{color:#fff}
 #search-suggest li .s-ic{flex-shrink:0;color:rgba(255,255,255,.45);display:flex}
 #search-suggest li .s-ic svg{display:block}
-#settings-modal .set-tabs button{width:auto;height:38px;border-radius:999px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:rgba(255,255,255,.62);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;transition:color .2s,background .2s,border-color .2s,box-shadow .2s,transform .2s;font-size:13px;font-weight:500;white-space:nowrap;position:relative;z-index:1;opacity:.75}
-#settings-modal .set-tabs button:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18);opacity:1;transform:translateY(-1px)}
-/* Accent-tinted glass so the active tab reads as selected without going flat
-   white. The inset highlight is what sells the pill as a physical surface. */
-#settings-modal .set-tabs button.active{color:#fff;font-weight:600;opacity:1;background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 30%,transparent),color-mix(in srgb,var(--accent) 12%,transparent));border-color:color-mix(in srgb,var(--accent) 55%,transparent);box-shadow:0 6px 18px color-mix(in srgb,var(--accent) 35%,transparent),inset 0 1px 0 rgba(255,255,255,.28),inset 0 -1px 0 rgba(0,0,0,.12);text-shadow:0 1px 8px rgba(0,0,0,.4)}
+/* Items carry no chrome of their own: the track supplies the surface and the
+   glider supplies the selection, so the ten cells read as one control. */
+#settings-modal .set-tabs button{width:auto;min-width:0;height:38px;border-radius:11px;border:0;background:transparent;color:rgba(255,255,255,.62);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 12px;transition:color .2s,background .2s;font-size:13px;font-weight:500;white-space:nowrap;position:relative;z-index:1}
+#settings-modal .set-tabs button svg{flex-shrink:0;color:rgba(255,255,255,.45);transition:color .2s}
+#settings-modal .set-tabs button span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#settings-modal .set-tabs button:not(.active):hover{color:rgba(255,255,255,.92);background:rgba(255,255,255,.07)}
+#settings-modal .set-tabs button:not(.active):hover svg{color:rgba(255,255,255,.8)}
+/* The glider behind the selected item already carries the accent tint, so the
+   icon stays white to keep contrast rather than doubling the accent. */
+#settings-modal .set-tabs button.active{color:#fff;font-weight:600;background:transparent;box-shadow:none;text-shadow:none}
+#settings-modal .set-tabs button.active svg{color:rgba(255,255,255,.92)}
 #settings-modal .set-scroll{min-height:0;max-height:none;overflow-y:auto;padding:16px 22px 22px;display:flex;flex-direction:column;gap:12px}
 #settings-modal .set-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:16px}
 #settings-modal .buy-card{text-align:center}
-@media(max-width:700px){#settings-modal{max-width:96vw}}
+@media(max-width:700px){#settings-modal{max-width:96vw}#settings-modal .set-tabs button{padding:0 8px;font-size:12px}#settings-modal .set-tabs button svg{width:16px;height:16px}}
+/* Below this the labels no longer fit five across, so drop to icons alone and
+   let the title attribute carry the name. */
+@media(max-width:600px){#settings-modal .set-tabs button{padding:0 4px}#settings-modal .set-tabs button span{display:none}#settings-modal .set-tabs button svg{width:18px;height:18px}}
 .pills{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 0;font-size:14px;color:#ddd}
 .pills-btns{display:flex;gap:4px}
 .pills-btns button{border:none;background:rgba(255,255,255,.05);color:rgba(255,255,255,.45);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
