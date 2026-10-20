@@ -13,10 +13,6 @@ const DISC1={enabled:1,idle:15,grace:60,minTabs:3,neverActive:1,neverAudible:1,n
 const DIM1={enabled:1,white:1,dark:0,vals:{dimmer:0,reader:0,blur:0},fx:{dimmer:1,reader:0,blur:0},edit:'dimmer',mode:'dimmer',scopes:{dimmer:'page',reader:'page',blur:'page'}};
 const YT1={enabled:1,wfs:0,remember:1,shortcut:1};
 S('discardCfg',DISC1);S('dimmerCfg',DIM1);S('ytCfg',YT1);
-// Random rotation offset so a reset does not land on the same photo every
-// time. Keep the bound in sync with KEYLESS_BG length. Existing installs have
-// no key and keep offset 0, so their rotation is unchanged.
-S('bgOffset',Math.floor(Math.random()*10));
 S('onb',0);
 try{if(chrome&&chrome.storage&&chrome.storage.local)await chrome.storage.local.set({frostline_discardCfg:DISC1,frostline_dimmerCfg:DIM1,frostline_ytCfg:YT1});}catch{}
 try{localStorage.setItem('frostline_defaultsV','1');}catch{}
@@ -456,9 +452,15 @@ $('#file-import').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=ne
 $('#set-name').value=store.get('name','');
 $('#set-name').onchange=e=>{store.set('name',e.target.value);tick();};
 // Background: Unsplash API + Upload/Color/Video
-// Keyless wallpaper rotation (no API key needed; generic Unsplash credit)
-const KEYLESS_BG=['photo-1506905925346-21bda4d32df4','photo-1470071459604-3b5ec3a7fe05','photo-1447752875215-b2761acb3c5d','photo-1472214103451-9374bd1c798e','photo-1501785888041-af3ef285b470','photo-1476514525535-07fb3b4ae5f1','photo-1500530855697-b586d89ba3ee','photo-1519681393784-d120267933ba','photo-1493246507139-91e8fad9978e','photo-1477414348463-c0eb7f1359b6'].map(id=>`https://images.unsplash.com/${id}?q=80&w=1920&auto=format&fit=crop`);
-function keylessPhoto(){const iv=store.get('refresh','day');let i;if(iv==='hour')i=Math.floor(Date.now()/36e5);else if(iv==='six')i=Math.floor(Date.now()/216e5);else if(iv==='week')i=Math.floor(Date.now()/6048e5);else if(iv==='tab'||iv==='always')i=Math.floor(Math.random()*1e9);else if(iv==='never'){const c=store.get('bgCache',null);if(c&&c.url)return{url:c.url,credit:c.credit};i=0;}else{const n=new Date();i=Math.floor((n-new Date(n.getFullYear(),0,0))/864e5);}const off=store.get('bgOffset',0)||0;return{url:KEYLESS_BG[(i+off)%KEYLESS_BG.length],credit:'Photo on <b>Unsplash</b>'};}
+// Keyless wallpaper rotation. Picsum serves Unsplash photos from stable numeric
+// ids with no API key, so the pool is stored as id ranges and expanded once:
+// 993 ids cost 532 chars here against 4KB as a flat array.
+const BG_RANGES='0-85,87-96,98-104,106-137,139-147,149,151-204,206,208-223,225,227-244,247-261,263-284,287-297,299-302,304-331,334-345,347-358,360-393,395-413,415-421,423-437,439-461,464-469,471-488,490-539,541-560,562-577,579-586,588,590-591,593-594,596,598-600,602-623,625-631,633-635,637-643,645-646,648-672,674-696,698-705,715-719,721-724,726-733,735-744,755-758,760,764-770,772-791,793-800,802-811,813-842,844-849,851-853,855-894,896,898,900-916,918-919,921-933,935-955,957-962,964-967,969-1006,1008-1016,1018-1029,1031-1033,1035-1045,1047-1084';
+const BG_IDS=BG_RANGES.split(',').flatMap(r=>{const p=r.split('-');const a=+p[0];const b=+(p[1]||p[0]);const o=[];for(let i=a;i<=b;i++)o.push(i);return o;});
+const bgUrl=(id,w)=>`https://picsum.photos/id/${id}/${w}`;
+function keylessPhoto(){const iv=store.get('refresh','day');
+  if(iv==='never'){const c=store.get('bgCache',null);if(c&&c.url)return{url:c.url,credit:c.credit};}
+  return{url:bgUrl(BG_IDS[Math.floor(Math.random()*BG_IDS.length)],1920),credit:'Photo on <b>Unsplash</b>'};}
 $('#set-unsplash-key').value=store.get('unsplashKey','');
 $('#set-unsplash-key').onchange=e=>{store.set('unsplashKey',e.target.value.trim());loadBackground(true);};
 const REFRESH_OPTS=[['day','Once a Day'],['hour','Every Hour'],['six','Every 6 Hours'],['tab','Every New Tab'],['week','Once a Week'],['always','Always'],['never','Never']];
@@ -504,7 +506,17 @@ const ACCENTS=['#3b82f6','#8b5cf6','#ec4899','#ef4444','#f97316','#eab308','#22c
 function applyAccent(c,auto){if(!auto)store.set('accentMode','manual');store.set('accent',c);document.documentElement.style.setProperty('--accent',c);syncAccentDots();}
 function syncAccentDots(){const cur=store.get('accent','#3b82f6'),auto=store.get('accentMode','auto')==='auto';[...document.querySelectorAll('#accent-row .acdot')].forEach(b=>b.classList.toggle('on',b.classList.contains('auto-dot')?auto:b.dataset.c===cur));}
 (function(){const r=$('#accent-row');if(!r)return;const auto=document.createElement('button');auto.className='acdot auto-dot';auto.title='Auto (wallpaper)';auto.onclick=()=>{store.set('accentMode','auto');const c=store.get('bgCache',null);if(c&&c.url)sampleAccent(c.url);syncAccentDots();};r.appendChild(auto);ACCENTS.forEach(c=>{const b=document.createElement('button');b.className='acdot';b.style.background=c;b.title=c;b.dataset.c=c;b.onclick=()=>applyAccent(c);r.appendChild(b);});if(store.get('accentMode','auto')==='auto'){syncAccentDots();const c=store.get('bgCache',null);if(c&&c.url)sampleAccent(c.url);else applyAccent(store.get('accent','#3b82f6'),true);}else applyAccent(store.get('accent','#3b82f6'));})();
-(function(){const g=$('#bg-grid');if(!g)return;const mark=u=>{[...g.querySelectorAll('button')].forEach(b=>b.classList.toggle('on',b.dataset.u===u));};KEYLESS_BG.forEach(u=>{const b=document.createElement('button');b.dataset.u=u;b.title='Use this wallpaper';b.style.backgroundImage=`url('${u.replace('w=1920','w=400')}')`;b.onclick=()=>{const credit='Photo on <b>Unsplash</b>';store.set('bgCache',{url:u,credit,ts:Date.now()});setBgUrl(u,credit);mark(u);};g.appendChild(b);});const c=store.get('bgCache',null);if(c&&c.url)mark(c.url);})();
+// The pool is far larger than the grid can show, so render a random sample of
+// ten and let Shuffle redraw it. The active wallpaper is pinned into the sample
+// so the highlighted tile keeps meaning something.
+(function(){const g=$('#bg-grid');if(!g)return;const N=10;let tiles=[],s=null;
+const mark=u=>{[...g.querySelectorAll('button[data-u]')].forEach(b=>b.classList.toggle('on',b.dataset.u===u));};
+const paint=()=>{tiles.forEach(t=>t.remove());tiles=[];const act=store.get('bgCache',null);const n=act&&act.url&&act.url.includes('picsum.photos/')?act.url:null;
+const pool=BG_IDS.slice();const out=[];while(out.length<N&&pool.length)out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+if(n&&!out.some(i=>bgUrl(i,1920)===n))out[out.length-1]=Number(n.split('/id/')[1].split('/')[0]);
+out.forEach(id=>{const u=bgUrl(id,1920);const b=document.createElement('button');b.dataset.u=u;b.title='Use this wallpaper';b.style.backgroundImage=`url('${bgUrl(id,400)}')`;b.onclick=()=>{const credit='Photo on <b>Unsplash</b>';store.set('bgCache',{url:u,credit,ts:Date.now()});setBgUrl(u,credit);mark(u);};g.insertBefore(b,s);tiles.push(b);});
+if(n)mark(n);};
+s=document.createElement('button');s.id='bg-shuffle';s.textContent='↻ Shuffle';s.onclick=paint;g.appendChild(s);paint();})();
 $('#set-color').onchange=e=>{const v=e.target.value.trim();if(!v)return;store.set('bg','solid');$('#bg-layer').style.background=v.includes('gradient')?v:'#1a202c';if(CSS.supports('color',v))$('#bg-layer').style.background=v;};
 const BG_SWATCHES=['#0f172a','#1a202c','#3b0764','#7c2d12','#052e16','#0c4a6e','linear-gradient(135deg,#f97316,#ec4899)','linear-gradient(135deg,#06b6d4,#3b82f6)','linear-gradient(135deg,#8b5cf6,#ec4899)','linear-gradient(135deg,#22c55e,#15803d)','linear-gradient(135deg,#111827,#4b5563)','linear-gradient(135deg,#f59e0b,#ef4444)'];
 function applyBgSolid(v){store.set('bg','solid');$('#bg-layer').style.background=v;const t=$('#set-color');if(t)t.value=v;}

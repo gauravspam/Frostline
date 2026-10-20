@@ -11,7 +11,8 @@
     var cache = JSON.parse(localStorage.getItem('frostline_bgCache') || 'null');
     if (!cache || typeof cache.url !== 'string') return;
     // localStorage is user-writable, so only paint URLs this extension produced.
-    if (cache.url.indexOf('https://images.unsplash.com/') !== 0) return;
+    if (cache.url.indexOf('https://images.unsplash.com/') !== 0 &&
+        cache.url.indexOf('https://picsum.photos/') !== 0) return;
     // JSON.stringify yields a CSS-valid quoted string and escapes any quote.
     document.documentElement.style.setProperty('--bg-boot', 'url(' + JSON.stringify(cache.url) + ')');
   } catch (e) {}
