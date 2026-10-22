@@ -368,15 +368,16 @@ const stat=f=>{if(f.obs){range(f);return;}const e=md(f.e||f.s);span(md(f.s)[0],m
 const gk=/hindu/.test(c)?'Indian - Hindu':/muslim|islam/.test(c)?'Indian - Muslim':/india/.test(c)?'India':/japan/.test(c)?'Japan':'';
 // India is the combined view of the three India-related calendars. Same-name
 // parents take the widest span with observations deduped by date+name; a
-// single sharing a parent name inside its span is already anchored by an
-// observation, so it collapses instead of printing twice.
+// single sharing a parent name inside its span collapses into the band, and
+// when its day is not already an observation it is promoted to one instead
+// of silently dropped - a future data edit must not delete a real row.
 if(gk==='India'){
 const streams=[FESTIVALS.India,FESTIVALS['Indian - Hindu'],FESTIVALS['Indian - Muslim']];
 const list=[];streams.forEach(g=>{if(!g)return;(g.annual||[]).forEach(f=>list.push(f));((g.years||{})[year]||[]).forEach(f=>list.push(f));});
 const parents=list.filter(f=>f.e),singles=list.filter(f=>!f.e);
 const merged=[];parents.forEach(f=>{const m=merged.find(x=>x.n===f.n);if(!m){merged.push(Object.assign({},f));return;}if(f.s<m.s)m.s=f.s;if(f.e>m.e)m.e=f.e;m.obs=(m.obs||[]).concat(f.obs||[]);});
 merged.forEach(m=>{m.obs=(m.obs||[]).filter((o,i,all)=>all.findIndex(x=>x.d===o.d&&x.n===o.n)===i);});
-singles.forEach(s=>{if(merged.find(x=>x.n===s.n&&s.s>=x.s&&s.s<=x.e))return;const ee=md(s.e||s.s);span(md(s.s)[0],md(s.s)[1],ee[0],ee[1],s.n,s.i);});
+singles.forEach(s=>{const m=merged.find(x=>x.n===s.n&&s.s>=x.s&&s.s<=x.e);if(m){if(!m.obs.some(o=>o.d===s.s&&o.n===s.n)){const o={d:s.s,n:s.n};if(s.i)o.i=s.i;m.obs.push(o);}return;}const ee=md(s.e||s.s);span(md(s.s)[0],md(s.s)[1],ee[0],ee[1],s.n,s.i);});
 merged.forEach(range);
 }else if(gk){const grp=FESTIVALS[gk]||{},shared=/^Indian - (Hindu|Muslim)$/.test(gk)?FESTIVALS.India:null;[grp,shared].forEach(g=>{if(g)(g.annual||[]).forEach(stat);});(((grp.years)||{})[year]||[]).forEach(stat);}
 if(/hindu|muslim|islam|india/.test(c)){one(0,14,'Makar Sankranti','\u{1FA81}');if(/india/.test(c)){const gf=new Date(year,E[0],E[1]-2);one(gf.getMonth(),gf.getDate(),'Good Friday','\u26EA');}}
