@@ -31,3 +31,5 @@ secrets.json
 *.crx
 *.pem
 *.zip
+# Superpowers SDD scratch
+.superpowers/
