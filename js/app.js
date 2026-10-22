@@ -355,13 +355,30 @@ function holNth(y,m,dow,n){if(n>0){const f=new Date(y,m,1).getDay();return 1+((d
 function calFestivals(country,year){
 const c=(country||'').toLowerCase(),out=[];
 const E=holEaster(year),em=new Date(year,E[0],E[1]+1);
-const put=(dt,name,icon)=>{const f=out.find(x=>x.name===name&&x.icon===icon);if(f){if(dt<f.a)f.a=dt;if(dt>f.b)f.b=dt;}else out.push({name,icon:icon||'\u{1F389}',a:dt,b:dt});};
+// Each parent carries ev, its display rows: singles are their own single row,
+// and the self row follows the span when a later put widens it.
+const put=(dt,name,icon)=>{const f=out.find(x=>x.name===name&&x.icon===icon);if(f){if(dt<f.a)f.a=dt;if(dt>f.b)f.b=dt;if(f.ev&&f.ev[0]){f.ev[0].a=f.a;f.ev[0].b=f.b;f.ev[0].days=Math.round((f.b-f.a)/864e5)+1;}}else out.push({name,icon:icon||'\u{1F389}',a:dt,b:dt,ev:[{name,icon:icon||'\u{1F389}',a:dt,b:dt,days:1,parent:null}]});};
 const one=(m,d,name,icon)=>put(new Date(year,m,d),name,icon);
 const span=(m1,d1,m2,d2,name,icon)=>{let t=new Date(year,m1,d1),b=new Date(year,m2,d2);if(b<t)b=new Date(year+1,m2,d2);for(;t<=b;t=new Date(t.getTime()+864e5))put(t,name,icon);};
 const md=s=>[+s.slice(0,2)-1,+s.slice(3)];
-const stat=f=>{const e=md(f.e||f.s);span(md(f.s)[0],md(f.s)[1],e[0],e[1],f.n,f.i);};
+// A range may carry named observations: one band from the real span, the
+// observations as the single-day display rows, no day-by-day expansion needed.
+const range=f=>{const ss=md(f.s),ee=md(f.e||f.s);let a=new Date(year,ss[0],ss[1]),b=new Date(year,ee[0],ee[1]);if(b<a)b=new Date(year+1,ee[0],ee[1]);const icon=f.i||'\u{1F389}';const ev=(f.obs||[]).map(o=>{const t=new Date(year,+o.d.slice(0,2)-1,+o.d.slice(3));return{name:o.n,icon:o.i||icon,a:t,b:t,days:1,parent:{name:f.n,a,b}};});out.push({name:f.n,icon,a,b,ev:ev.length?ev:[{name:f.n,icon,a,b,days:Math.round((b-a)/864e5)+1,parent:null}]});};
+const stat=f=>{if(f.obs){range(f);return;}const e=md(f.e||f.s);span(md(f.s)[0],md(f.s)[1],e[0],e[1],f.n,f.i);};
 const gk=/hindu/.test(c)?'Indian - Hindu':/muslim|islam/.test(c)?'Indian - Muslim':/india/.test(c)?'India':/japan/.test(c)?'Japan':'';
-if(gk){const grp=FESTIVALS[gk]||{},shared=/^Indian - (Hindu|Muslim)$/.test(gk)?FESTIVALS.India:null;[grp,shared].forEach(g=>{if(g)(g.annual||[]).forEach(stat);});(((grp.years)||{})[year]||[]).forEach(stat);}
+// India is the combined view of the three India-related calendars. Same-name
+// parents take the widest span with observations deduped by date+name; a
+// single sharing a parent name inside its span is already anchored by an
+// observation, so it collapses instead of printing twice.
+if(gk==='India'){
+const streams=[FESTIVALS.India,FESTIVALS['Indian - Hindu'],FESTIVALS['Indian - Muslim']];
+const list=[];streams.forEach(g=>{if(!g)return;(g.annual||[]).forEach(f=>list.push(f));((g.years||{})[year]||[]).forEach(f=>list.push(f));});
+const parents=list.filter(f=>f.e),singles=list.filter(f=>!f.e);
+const merged=[];parents.forEach(f=>{const m=merged.find(x=>x.n===f.n);if(!m){merged.push(Object.assign({},f));return;}if(f.s<m.s)m.s=f.s;if(f.e>m.e)m.e=f.e;m.obs=(m.obs||[]).concat(f.obs||[]);});
+merged.forEach(m=>{m.obs=(m.obs||[]).filter((o,i,all)=>all.findIndex(x=>x.d===o.d&&x.n===o.n)===i);});
+singles.forEach(s=>{if(merged.find(x=>x.n===s.n&&s.s>=x.s&&s.s<=x.e))return;const ee=md(s.e||s.s);span(md(s.s)[0],md(s.s)[1],ee[0],ee[1],s.n,s.i);});
+merged.forEach(range);
+}else if(gk){const grp=FESTIVALS[gk]||{},shared=/^Indian - (Hindu|Muslim)$/.test(gk)?FESTIVALS.India:null;[grp,shared].forEach(g=>{if(g)(g.annual||[]).forEach(stat);});(((grp.years)||{})[year]||[]).forEach(stat);}
 if(/hindu|muslim|islam|india/.test(c)){one(0,14,'Makar Sankranti','\u{1FA81}');if(/india/.test(c)){const gf=new Date(year,E[0],E[1]-2);one(gf.getMonth(),gf.getDate(),'Good Friday','\u26EA');}}
 else if(/united kingdom|britain|england/.test(c)){one(0,1,"New Year's Day",'\u{1F386}');const gf=new Date(year,E[0],E[1]-2);one(gf.getMonth(),gf.getDate(),'Good Friday','\u26EA');one(em.getMonth(),em.getDate(),'Easter Monday','\u{1F430}');one(4,holNth(year,4,1,1),'Early May Bank Holiday','\u{1F334}');one(4,holNth(year,4,1,-1),'Spring Bank Holiday','\u{1F33F}');one(7,holNth(year,7,1,-1),'Summer Bank Holiday','\u26F1');one(11,25,'Christmas Day','\u{1F384}');one(11,26,'Boxing Day','\u{1F381}');}
 else if(/canada/.test(c)){one(0,1,"New Year's Day",'\u{1F386}');const gf=new Date(year,E[0],E[1]-2);one(gf.getMonth(),gf.getDate(),'Good Friday','\u26EA');one(em.getMonth(),em.getDate(),'Easter Monday','\u{1F430}');const vd=24-((new Date(year,4,24).getDay()+6)%7);one(4,vd,'Victoria Day','\u{1F451}');one(6,1,'Canada Day','\u{1F1E8}\u{1F1E6}');one(8,holNth(year,8,1,1),'Labour Day','\u{1F477}');one(9,holNth(year,9,1,2),'Thanksgiving','\u{1F983}');one(11,25,'Christmas Day','\u{1F384}');one(11,26,'Boxing Day','\u{1F381}');}
@@ -376,6 +393,7 @@ const covered=d=>out.some(f=>f.a<=d&&f.b>=d);
 if(!covered(new Date(year,0,1)))one(0,1,"New Year's Day",'\u{1F386}');
 if(!covered(new Date(year,11,25)))one(11,25,'Christmas','\u{1F384}');
 return out.sort((x,y)=>x.a-y.a).map(f=>Object.assign(f,{days:Math.round((f.b-f.a)/864e5)+1}));}
+function calDisplay(country,year){const rows=[];calFestivals(country,year).forEach(f=>(f.ev||[]).forEach(o=>rows.push(o)));return rows.sort((x,y)=>x.a-y.a);}
 function calHolidays(country,year){const out=[];calFestivals(country,year).forEach(f=>{for(let t=f.a;t<=f.b;t=new Date(t.getTime()+864e5))out.push({m:t.getMonth(),d:t.getDate(),name:f.name,icon:f.icon});});return out;}
 let calSel=null;
 const calShort=d=>d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
