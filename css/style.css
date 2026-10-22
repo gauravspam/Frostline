@@ -185,6 +185,8 @@ li.done span.txt{text-decoration:line-through;opacity:.5}
 .set-card h4{font-size:14px;margin:14px 0 8px}.set-card h4:first-child{margin-top:0}
 .set-card label{display:block;font-size:13px;margin:12px 0 0;color:#ddd}
 .set-card input,.set-card select{width:100%;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:11px 12px;margin-top:6px;font-size:14px}
+.set-card label.err input{border-color:rgba(239,68,68,.6);animation:fldFlash 1s ease 2}
+@keyframes fldFlash{50%{border-color:rgba(255,255,255,.12)}}
 .set-card input[type=checkbox]{width:auto;margin-right:8px}
 .muted{opacity:.6;font-size:13px}.small{font-size:12px}
 .buy-card{text-align:center}.buy-btn{display:block;width:100%;margin-top:10px;background:rgba(250,204,21,.12);border:1px solid rgba(250,204,21,.4);color:#facc15;border-radius:12px;padding:11px;cursor:pointer;font-weight:600}

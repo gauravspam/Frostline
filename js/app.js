@@ -42,10 +42,13 @@ function tick(){
   const ra=$('#rect-arc');if(ra){const sc=n.getSeconds();if(sc===0){ra.style.transition='none';}ra.style.strokeDashoffset=String(100-(sc/60)*100);if(sc===0){void ra.getBoundingClientRect().width;ra.style.transition='';}}
   const greet=h<6?'Good night':h<12?'Good morning':h<17?'Good afternoon':'Good evening';
   const name=store.get('name','');
+  // Custom text wins when it exists; the two toggles are kept exclusive in
+  // settings, so the greeting line always has one owner.
   const showG=store.get('showGreet',0), showC=store.get('showCustom',0), custom=store.get('customGreet','');
   const gEl=$('#greeting');
-  if(!showG){gEl.style.display='none';}
-  else{gEl.style.display='';gEl.textContent=(showC&&custom?custom:greet+(name?' '+name.toUpperCase():''));}
+  if(showC&&custom){gEl.style.display='';gEl.textContent=custom;}
+  else if(showG){gEl.style.display='';gEl.textContent=greet+(name?' '+name.toUpperCase():'');}
+  else{gEl.style.display='none';}
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
   $('#w-day-name').textContent=days[n.getDay()];
@@ -59,7 +62,8 @@ setInterval(tick,1000);tick();
 // Quotes (categories, day-of-year rotation)
 const QUOTES=[["Success comes from having dreams that are bigger than your fears.","BOBBY UNSER"],["The best way out is always through.","ROBERT FROST"],["What we think, we become.","BUDDHA"],["Simplicity is the ultimate sophistication.","LEONARDO DA VINCI"],["Whether you think you can or you think you can't, you're right.","HENRY FORD"],["The only way to do great work is to love what you do.","STEVE JOBS"],["In the middle of difficulty lies opportunity.","ALBERT EINSTEIN"],["It always seems impossible until it's done.","NELSON MANDELA"]];
 const QUOTE_CATS={General:QUOTES,Motivation:[QUOTES[0],QUOTES[4],QUOTES[5],QUOTES[7]],Stoicism:[["The impediment to action advances action.","MARCUS AURELIUS"],["We suffer more in imagination than in reality.","SENECA"],["It's not what happens to you, but how you react.","EPICTETUS"],["Waste no more time arguing what a good man should be. Be one.","MARCUS AURELIUS"]],'Bhagavad Gita':[["You have a right to your actions, but never to the fruits of action.","BHAGAVAD GITA"],["The mind is restless and difficult to restrain, but it is subdued by practice.","BHAGAVAD GITA"],["Success comes from having dreams that are bigger than your fears.","BOBBY UNSER"]],Buddhism:[["Peace comes from within. Do not seek it without.","BUDDHA"],["What we think, we become.","BUDDHA"],["Happiness is not something ready made. It comes from your own actions.","DALAI LAMA"]]};
-function applyQuote(){const pool=[];Object.values(QUOTE_CATS).forEach(a=>a.forEach(q=>{if(!pool.some(p=>p[0]===q[0]))pool.push(q);}));const q=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];$('#quote').textContent=`"${q[0]}"`;$('#quote-author').textContent='— '+q[1];}
+const QUOTE_OPTS=[{value:'All',label:'All categories'},...Object.keys(QUOTE_CATS).map(k=>({value:k,label:k}))];
+function applyQuote(){const cat=store.get('quoteCat','All');const pool=[];Object.keys(QUOTE_CATS).forEach(k=>{if(cat!=='All'&&k!==cat)return;QUOTE_CATS[k].forEach(q=>{if(!pool.some(p=>p[0]===q[0]))pool.push(q);});});const q=pool[Math.floor(Math.random()*pool.length)]||QUOTES[0];$('#quote').textContent=`"${q[0]}"`;$('#quote-author').textContent='— '+q[1];}
 applyQuote();
 
 // Modals
@@ -189,6 +193,28 @@ window.addEventListener('resize',()=>{const ul=$('#wx-drop');if(ul&&ul.classList
 window.addEventListener('scroll',()=>{const ul=$('#wx-drop');if(ul&&ul.classList.contains('open'))positionWxDrop();},true);
 function wxIsNight(j){try{const r=new Date(j.daily.sunrise[0]),s=new Date(j.daily.sunset[0]),n=new Date();return n<r||n>s;}catch{return false;}}
 const WX_MOON='<svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.5 14.5A8.5 8.5 0 1 1 9.5 3.5a7 7 0 0 0 11 11z"/></svg>';
+// Moonrise/moonset from a low-precision lunar position; Open-Meteo has no moon
+// fields, so these come out of trigonometry, not the API. Rises and sets are
+// horizon crossings found by a 15-min scan plus bisection.
+function wxMoonSpan(latDeg,lonDeg,w0,w1){
+  const rad=Math.PI/180,phi=latDeg*rad;
+  const alt=t=>{ // sin of the moon's altitude; only its sign matters here
+    const d=t/86400000+2440587.5,T=(d-2451545)/36525;
+    const L=218.316+481267.881*T,D=297.85+445267.11*T,M=134.963+477198.868*T,Su=357.53+35999.05*T,F=93.272+483202.018*T;
+    const ln=(L+6.289*Math.sin(M*rad)+1.274*Math.sin((2*D-M)*rad)+0.658*Math.sin(2*D*rad)+0.214*Math.sin(2*M*rad)-0.186*Math.sin(Su*rad)-0.114*Math.sin(2*F*rad))*rad;
+    const be=(5.128*Math.sin(F*rad)+0.281*Math.sin((M+F)*rad)+0.277*Math.sin((M-F)*rad)+0.173*Math.sin((2*D-F)*rad))*rad;
+    const eps=23.4393*rad;
+    const ra=Math.atan2(Math.sin(ln)*Math.cos(eps)-Math.tan(be)*Math.sin(eps),Math.cos(ln));
+    const de=Math.asin(Math.sin(be)*Math.cos(eps)+Math.cos(be)*Math.sin(eps)*Math.sin(ln));
+    const gs=(280.46061837+360.98564736629*(d-2451545))*rad;
+    return Math.sin(phi)*Math.sin(de)+Math.cos(phi)*Math.cos(de)*Math.cos(gs+lonDeg*rad-ra);
+  };
+  const cross=(a,b)=>{for(let i=0;i<20;i++){const m=(a+b)/2;if(alt(a)*alt(m)>0)a=m;else b=m;}return(a+b)/2;};
+  const step=15*60000,rises=[],sets=[];
+  let up=alt(w0)>0;
+  for(let t=w0+step;t<=w1;t+=step){const nu=alt(t)>0;if(nu!==up){const tc=cross(t-step,t);(up?sets:rises).push(new Date(tc));up=nu;}}
+  return{rises,sets,upAt0:alt(w0)>0};
+}
 function aqBP(c,B){for(const[cl,ch,al,ah]of B){if(c<=ch)return Math.round(al+(ah-al)*(c-cl)/Math.max(1e-9,(ch-cl)));}return B[B.length-1][3];}
 function aqBand(v,T){let b=0;for(const t of T){if(v>t)b++;}return b;}
 const AQI_EU=['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','NO','CH','IS'];
@@ -205,32 +231,58 @@ uk(p){const T={o3:[33,66,100,120,140,160,187,213,240],no2:[67,134,200,267,334,40
 ca(p){if(!isFinite(p.pm25)||!isFinite(p.o3)||!isFinite(p.no2))return{n:NaN};const o3=p.o3/1.96,no2=p.no2/1.88;const v=(10/10.4)*100*((Math.exp(0.000537*o3)-1)+(Math.exp(0.000871*no2)-1)+(Math.exp(0.000487*p.pm25)-1));const n=Math.max(1,Math.round(v));const cat=n<=3?'Low':n<=6?'Moderate':n<=10?'High':'Very high';return{n,cat,color:n<=3?'#4ade80':n<=6?'#facc15':n<=10?'#fb923c':'#7f1d1d',sys:'CA'};}
 };
 async function loadAQI(lat,lon){try{let box=$('#wx-aqi');if(!box){box=document.createElement('div');box.id='wx-aqi';const det=$('#weather-detail');if(det&&det.parentNode)det.parentNode.insertBefore(box,det.nextSibling);else return;}const r=await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=pm2_5,pm10,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone&past_days=1&timezone=auto`);const j=await r.json();const H=j.hourly||{};const avg24=k=>{const a=(H[k]||[]).filter(v=>v!=null).slice(-24);return a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;};const c={pm2_5:avg24('pm2_5'),pm10:avg24('pm10'),carbon_monoxide:avg24('carbon_monoxide'),nitrogen_dioxide:avg24('nitrogen_dioxide'),sulphur_dioxide:avg24('sulphur_dioxide'),ozone:avg24('ozone')};const cc=await aqCountry(lat,lon);const sc=aqScale(cc);const res=AQI_CALC[sc]({pm25:c.pm2_5,pm10:c.pm10,co:c.carbon_monoxide,no2:c.nitrogen_dioxide,so2:c.sulphur_dioxide,o3:c.ozone});if(!isFinite(res.n))return;box.innerHTML='';const dot=document.createElement('span');dot.className='aqi-dot';dot.style.background=res.color;const tx=document.createElement('span');tx.textContent=`Air ${Math.round(res.n)} · ${res.cat}`;const tag=document.createElement('small');tag.style.opacity='.45';tag.textContent=` ${res.sys}`;box.appendChild(dot);box.appendChild(tx);box.appendChild(tag);}catch{}}
-function renderSkyArc(j,loc){const box=$('#wx-sun');if(!box)return;try{
+let wxSky=null; // last weather payload + loc, so the arc can re-draw on the minute
+function renderSkyArc(){const j=wxSky&&wxSky.j;if(!j)return;const box=$('#wx-sun');if(!box)return;try{
     const rise=new Date(j.daily.sunrise[0]),set=new Date(j.daily.sunset[0]),now=new Date();
     if(!isFinite(rise)||!isFinite(set)||set<=rise)return;
-    // Day: sun rides the arc. Night (after set, before next rise): a moon rides
-    // the same arc instead of the sun hanging at an endpoint.
-    let f,moon=false;
+    // Day: the sun rides the arc. Night: the moon rides its own computed
+    // rise/set instead of a fake sunset-to-sunrise loop (it only matches a
+    // full moon). Labels wear the moon glyph while the moon is the rider.
+    let f,moon=false,moonUp='—',moonDown='—';
     if(now>=rise&&now<=set){f=(now-rise)/(set-rise);}
     else{
       moon=true;
       const afterSet=now>set;
-      const nset=afterSet?set:new Date(set.getTime()-864e5);
-      let nrise=afterSet?new Date(j.daily.sunrise[1]):rise;
-      if(!isFinite(nrise)||nrise<=nset){nrise=new Date(nset.getTime()+864e5);}
-      f=Math.min(1,Math.max(0,(now-nset)/(nrise-nset)));
+      const nStart=afterSet?set:new Date(set.getTime()-864e5);
+      let nEnd=afterSet?new Date(j.daily.sunrise[1]):rise;
+      if(!isFinite(nEnd)||nEnd<=nStart)nEnd=new Date(nStart.getTime()+864e5);
+      let a=+nStart,b=+nEnd; // fallback: the whole night window
+      const loc=wxSky.loc||{};
+      if(loc.lat!=null){
+        const span=wxMoonSpan(loc.lat,loc.lon||0,nStart.getTime()-10*36e5,nEnd.getTime());
+        const ev=[...span.rises.map(d=>[+d,1]),...span.sets.map(d=>[+d,0])].sort((x,y)=>x[0]-y[0]);
+        let up=span.upAt0,lastRise=null;
+        for(const [t,k] of ev){if(t>=now)break;up=!!k;if(k)lastRise=t;}
+        if(up){ // already risen: from that rise (or night start when it rose before) to its set
+          a=Math.max(lastRise!=null?lastRise:+nStart,+nStart);
+          const nextSet=span.sets.find(d=>+d>a);
+          b=nextSet?Math.min(+nextSet,+nEnd):+nEnd;
+          if(b<=a)b=a+1000;
+          if(lastRise!=null)moonUp=wxFmtSun(new Date(lastRise).toISOString());
+          if(nextSet)moonDown=wxFmtSun(nextSet.toISOString());
+        }else{ // down: wait for the next rise, clip the dot at the left edge until then
+          const nextRise=span.rises.find(d=>+d>now);
+          if(nextRise){a=+nextRise;const nextSet=span.sets.find(d=>+d>a);b=nextSet?Math.min(+nextSet,+nEnd):+nEnd;if(b<=a)b=a+1000;moonUp=wxFmtSun(nextRise.toISOString());if(nextSet)moonDown=wxFmtSun(nextSet.toISOString());}
+        }
+      }
+      f=Math.min(1,Math.max(0,(now-a)/(b-a)));
     }
     const sx=100-90*Math.cos(Math.PI*f),sy=100-90*Math.sin(Math.PI*f);
     const dot=moon
       ?`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="9" fill="#e8edf5"/>`
       :`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="9" fill="#fbbf24"/>`;
-    box.innerHTML=`<svg viewBox="0 0 200 116" width="220"><path d="M10,100 A90,90 0 0 1 190,100" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/>${dot}</svg><div class="wx-riseset"><span>↑ ${wxFmtSun(j.daily.sunrise[0])}</span><span>↓ ${wxFmtSun(j.daily.sunset[0])}</span></div>`;
+    const tags=moon
+      ?`<span>☾ ↑ ${moonUp}</span><span>☾ ↓ ${moonDown}</span>`
+      :`<span>☀ ↑ ${wxFmtSun(j.daily.sunrise[0])}</span><span>☀ ↓ ${wxFmtSun(j.daily.sunset[0])}</span>`;
+    box.innerHTML=`<svg viewBox="0 0 200 116" width="220"><path d="M10,100 A90,90 0 0 1 190,100" fill="none" stroke="rgba(255,255,255,.25)" stroke-dasharray="4 4"/>${dot}</svg><div class="wx-riseset">${tags}</div>`;
   }catch{}}
 async function loadWeather(){if(wxAbort)wxAbort.abort();wxAbort=new AbortController();const sig=wxAbort.signal;try{const loc=await wxResolve(wx.city||'Thane');if(sig.aborted)return;const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset&forecast_days=7&timezone=auto`,{signal:sig});const j=await r.json();const t=wxToU(j.current.temperature_2m),desc=wxDesc(j.current.weather_code);$('#w-weather').textContent=loc.name;$('#weather-big').textContent=`${t}°`;$('#weather-detail').textContent=`${desc} · H:${wxToU(j.daily.temperature_2m_max[0])}° L:${wxToU(j.daily.temperature_2m_min[0])}°`;const WX_SVG_H='<svg viewBox="0 0 24 24" width="84" height="84" fill="none" stroke="currentColor" stroke-width="1.5">';
 const WX_ICONS={Clear:WX_SVG_H+'<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8"/></svg>',Cloudy:WX_SVG_H+'<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',Foggy:WX_SVG_H+'<path d="M18 10h-1.3A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>',Rain:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M8 19v2M12 20v2M16 19v2"/></svg>',Snow:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M8 19v2M12 20v2M16 19v2"/></svg>',Storm:WX_SVG_H+'<path d="M17 9h-1.2A7 7 0 1 0 8 17h9a4.5 4.5 0 0 0 0-8z"/><path d="M13 18l-2.5 4H13l-1 2.5"/></svg>'};
-$('#wx-icon').innerHTML=(desc==='Clear'&&wxIsNight(j))?WX_MOON:(WX_ICONS[desc]||WX_ICONS.Cloudy);$('#weather-err').classList.add('hidden');$('#wx-searchrow').classList.remove('err');if(wxCommitted){wxCommitted=false;$('#wx-input').value='';}hideWxDrop();loadAQI(loc.lat,loc.lon);const curP=String(j.current.time).slice(0,13);let si=j.hourly.time.findIndex(x=>String(x).slice(0,13)>=curP);if(si<0)si=0;const hh=$('#weather-hourly');hh.innerHTML='';for(let i=si;i<Math.min(si+8,j.hourly.time.length);i++){const d=document.createElement('div');const h=new Date(j.hourly.time[i]).getHours();d.innerHTML=`<b>${i===si?'Now':`${h%12||12}${h>=12?'p':'a'}`}</b><span>${wxToU(j.hourly.temperature_2m[i])}°</span>`;hh.appendChild(d);}renderSkyArc(j,loc);const dw=$('#wx-daily');dw.innerHTML='';for(let i=1;i<=5&&i<j.daily.time.length;i++){const d=document.createElement('div');const lbl=new Date(j.daily.time[i]+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});d.innerHTML=`<span>${lbl}</span><span>${wxDesc(j.daily.weather_code[i])}</span><span class="d-low">${wxToU(j.daily.temperature_2m_min[i])}° <span class="d-high">/ ${wxToU(j.daily.temperature_2m_max[i])}°</span></span>`;dw.appendChild(d);}}catch(e){if(e&&e.name==='AbortError')return;$('#weather-err').classList.remove('hidden');$('#wx-searchrow').classList.add('err');}}
+$('#wx-icon').innerHTML=(desc==='Clear'&&wxIsNight(j))?WX_MOON:(WX_ICONS[desc]||WX_ICONS.Cloudy);$('#weather-err').classList.add('hidden');$('#wx-searchrow').classList.remove('err');if(wxCommitted){wxCommitted=false;$('#wx-input').value='';}hideWxDrop();loadAQI(loc.lat,loc.lon);const curP=String(j.current.time).slice(0,13);let si=j.hourly.time.findIndex(x=>String(x).slice(0,13)>=curP);if(si<0)si=0;const hh=$('#weather-hourly');hh.innerHTML='';for(let i=si;i<Math.min(si+8,j.hourly.time.length);i++){const d=document.createElement('div');const h=new Date(j.hourly.time[i]).getHours();d.innerHTML=`<b>${i===si?'Now':`${h%12||12}${h>=12?'p':'a'}`}</b><span>${wxToU(j.hourly.temperature_2m[i])}°</span>`;hh.appendChild(d);}wxSky={j,loc};renderSkyArc();const dw=$('#wx-daily');dw.innerHTML='';for(let i=1;i<=5&&i<j.daily.time.length;i++){const d=document.createElement('div');const lbl=new Date(j.daily.time[i]+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'});d.innerHTML=`<span>${lbl}</span><span>${wxDesc(j.daily.weather_code[i])}</span><span class="d-low">${wxToU(j.daily.temperature_2m_min[i])}° <span class="d-high">/ ${wxToU(j.daily.temperature_2m_max[i])}°</span></span>`;dw.appendChild(d);}}catch(e){if(e&&e.name==='AbortError')return;$('#weather-err').classList.remove('hidden');$('#wx-searchrow').classList.add('err');}}
 function wxSync(){$('#wx-input').value=wx.city||'';$$('#wx-units button').forEach(b=>b.classList.toggle('on',(b.dataset.u==='f')===(wx.unit==='f')));const sl=$('#set-loc');if(sl)sl.value=wx.latLon||'';try{paintUnits();}catch{}}
 wxSync();loadWeather();
+// Re-place the arc dot as real time passes; only useful while the modal is open.
+setInterval(()=>{if(wxSky&&!$('#weather-modal').classList.contains('hidden'))renderSkyArc();},15000);
 function wxCommit(){const v=$('#wx-input').value.trim();if(!v||v===wx.city)return;wx.city=v;store.set('weather',wx);wxCommitted=true;loadWeather();}
 $('#wx-input').addEventListener('keydown',e=>{if(e.key==='Enter')wxCommit();});
 $('#wx-input').addEventListener('input',()=>renderWxDrop());
@@ -451,7 +503,11 @@ $('#btn-import').onclick=()=>$('#file-import').click();
 $('#file-import').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const j=JSON.parse(r.result);let ls={},cs=null;if(j&&typeof j==='object'&&j.localStorage&&typeof j.localStorage==='object'){ls=j.localStorage;if(j.chromeStorageLocal&&typeof j.chromeStorageLocal==='object')cs=j.chromeStorageLocal;}else{for(const k of Object.keys(j||{})){if(typeof k==='string')ls[k]=j[k];}}let n=0;for(const [k,v] of Object.entries(ls)){try{localStorage.setItem(k,typeof v==='string'?v:JSON.stringify(v));n++;}catch{}}if(cs&&chrome&&chrome.storage&&chrome.storage.local){try{await chrome.storage.local.set(cs);n+=Object.keys(cs).length;}catch{}}setBackupStatus(`✓ Imported ${n} settings. Reload to apply.`,true);}catch{setBackupStatus('✕ Import failed — invalid file.',false);}};r.readAsText(f);};
 
 $('#set-name').value=store.get('name','');
-$('#set-name').onchange=e=>{store.set('name',e.target.value);tick();};
+$('#set-name').onchange=e=>{store.set('name',e.target.value);tick();paintNameErr();};
+// A saved name is inert until Greeting or Custom Greeting is enabled; the red
+// border on the field says so, same cue as the GitHub row's location error.
+function paintNameErr(){const el=$('#set-name');if(!el)return;const lb=el.closest('label');if(!lb)return;lb.classList.toggle('err',!!store.get('name','').trim()&&!store.get('showGreet',0)&&!store.get('showCustom',0));}
+paintNameErr();
 // Background: Unsplash API + Upload/Color/Video
 // Keyless wallpaper rotation. Picsum serves Unsplash photos from stable numeric
 // ids with no API key, so the pool is stored as id ranges and expanded once:
@@ -531,9 +587,15 @@ const CLOCK_ORDER=['modern','analog','rectangle'];
 function renderClockPick(c){const w=$('#clock-pick');if(!w)return;w.innerHTML='';CLOCK_ORDER.forEach(k=>{const b=document.createElement('button');b.textContent=CLOCKS[k];if(k===c)b.classList.add('on');b.onclick=()=>{store.set('clock',k);applyClock();};w.appendChild(b);});}
 function applyClock(){let c=store.get('clock','rectangle');if(CLOCK_MIGRATION[c]){c=CLOCK_MIGRATION[c];store.set('clock',c);}document.body.dataset.clock=c;renderClockPick(c);pulseClock();syncAmpm();}
 applyClock();
-function renderDisplayToggles(){const d=$('#display-toggles');if(!d)return;d.innerHTML='';d.appendChild(toggleRow('Greeting',store.get('showGreet',0),()=>{store.set('showGreet',store.get('showGreet',0)?0:1);renderDisplayToggles();tick();}));d.appendChild(toggleRow('Show Custom Greeting',store.get('showCustom',0),()=>{store.set('showCustom',store.get('showCustom',0)?0:1);renderDisplayToggles();tick();}));syncTfSeg();}
+function renderDisplayToggles(){const d=$('#display-toggles');if(!d)return;d.innerHTML='';
+  // Turning one toggle on turns the other off; turning one off leaves the neighbor as it is.
+  d.appendChild(toggleRow('Greeting',store.get('showGreet',0),()=>{store.set('showGreet',store.get('showGreet',0)?0:1);if(store.get('showGreet',0))store.set('showCustom',0);renderDisplayToggles();tick();paintNameErr();}));
+  d.appendChild(toggleRow('Show Custom Greeting',store.get('showCustom',0),()=>{store.set('showCustom',store.get('showCustom',0)?0:1);if(store.get('showCustom',0))store.set('showGreet',0);renderDisplayToggles();tick();paintNameErr();}));syncTfSeg();}
 renderDisplayToggles();
 $('#set-custom-greet').value=store.get('customGreet','');$('#set-custom-greet').onchange=e=>{store.set('customGreet',e.target.value);tick();};
+// Quote pool follows the Display-tab category; re-roll shows the change at once.
+function paintQuoteCat(){cselBuild('quote-cat-btn',QUOTE_OPTS,store.get('quoteCat','All'),v=>{store.set('quoteCat',v);paintQuoteCat();applyQuote();});}
+paintQuoteCat();
 $('#set-clock-size').oninput=e=>{store.set('clockSize',+e.target.value);applyClockSize();};
 applyClockSize();
 
