@@ -355,29 +355,338 @@
   // Only Video: strip the watch page back to the player. YouTube's renderer
   // destroys and rebuilds these nodes on navigation and on lazy render, so the
   // hide is driven from one list each pass instead of being assumed to stick.
-  const OV_BASE = '#secondary, ytd-watch-metadata, ytd-video-primary-info-renderer, ytd-video-secondary-info-renderer';
+  const OV_BASE = 'ytd-watch-metadata, ytd-video-primary-info-renderer, ytd-video-secondary-info-renderer';
   const OV_COMMENTS = 'ytd-comments';
+  const OV_SLOT_ID = 'frostline-ov-slot';
+  const OV_PANEL = 'ytd-engagement-panel-section-list-renderer';
+  const OV_OPEN = 'ytd-engagement-panel-section-list-renderer[visibility="ENGAGEMENT_PANEL_VISIBILITY_EXPANDED"]';
+  const OV_GLASS_ID = 'frostline-ov-glass';
+  const OV_CHAT_GLASS_ID = 'frostline-ov-chat-glass';
+  // The chapter panel paints its own opaque header and content; the chat paints
+  // an opaque app surface inside the iframe. Clear those layers so the glass on
+  // the outer frame is what the page sees, while text keeps its native colors.
+  const OV_GLASS_CSS = `
+#secondary ytd-engagement-panel-section-list-renderer[target-id^="engagement-panel-macro-markers"] {
+  background: rgba(255,255,255,.62) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 2px 16px rgba(0,0,0,.12) !important;
+}
+html[dark] #secondary ytd-engagement-panel-section-list-renderer[target-id^="engagement-panel-macro-markers"] {
+  background: rgba(0,0,0,.35) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 2px 16px rgba(0,0,0,.22) !important;
+}
+#secondary ytd-engagement-panel-section-list-renderer[target-id^="engagement-panel-macro-markers"] #content,
+#secondary ytd-engagement-panel-section-list-renderer[target-id^="engagement-panel-macro-markers"] #header,
+#secondary ytd-engagement-panel-section-list-renderer[target-id^="engagement-panel-macro-markers"] #subheader {
+  background: transparent !important;
+}
+#secondary #chat-container ytd-live-chat-frame {
+  background: rgba(255,255,255,.62) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
+  backdrop-filter: blur(20px) saturate(1.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08), 0 2px 16px rgba(0,0,0,.12) !important;
+}
+html[dark] #secondary #chat-container ytd-live-chat-frame {
+  background: rgba(0,0,0,.35) !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08), 0 2px 16px rgba(0,0,0,.22) !important;
+}`;
+  const OV_CHAT_GLASS_CSS = `
+html, body, yt-live-chat-app, yt-live-chat-renderer,
+yt-live-chat-header-renderer, yt-live-chat-message-renderer,
+yt-live-chat-banner-renderer, yt-live-chat-item-list-renderer,
+#item-scroller, #items {
+  background: transparent !important;
+}`;
   // Saved per element so disabling restores exactly the inline value that was
   // there, not a blanket inline:style that would fight YouTube's own rules.
   const ovSaved = new Map();
-  let ovObs = null, ovTimer = 0;
+  // The native sidebar is positioned, not moved: reparenting the live chat
+  // iframe resets it to about:blank. A spacer reserves its place in #below so
+  // comments stay below the native panel/chat.
+  const ovStyled = new Map();
+  let ovObs = null, ovTimer = 0, ovSlot = null;
+  let ovRO = null, ovROPlayer = null, ovROSec = null;
+  let ovWasActive = false;
+  let ovChatEl = null, ovChatSaved = null;
+  let ovGlassEl = null, ovChatFrame = null;
   function ovHide(sel) {
+    let n = 0;
     try {
       document.querySelectorAll(sel).forEach((el) => {
         if (ovSaved.has(el)) return;
         ovSaved.set(el, el.style.display);
         el.style.display = 'none';
+        n++;
       });
     } catch {}
+    return n;
   }
   function ovRestore(sel) {
+    let n = 0;
     try {
       ovSaved.forEach((v, el) => {
         if (sel && !el.matches(sel)) return;
         try { el.style.display = v; } catch {}
         ovSaved.delete(el);
+        n++;
       });
     } catch {}
+    return n;
+  }
+  // Hiding the sidebar widens #movie_player but YouTube only re-fits the
+  // <video> element on resize. Without this the player shows its old size with
+  // dead margins until something else nudges the window.
+  function ovNudge() {
+    try { window.dispatchEvent(new Event('resize')); } catch {}
+  }
+  function ovStyle(el, prop, val) {
+    if (!el || !el.style) return;
+    let rec = ovStyled.get(el);
+    if (!rec) { rec = {}; ovStyled.set(el, rec); }
+    if (!(prop in rec)) {
+      rec[prop] = [el.style.getPropertyValue(prop), el.style.getPropertyPriority(prop)];
+    }
+    try { el.style.setProperty(prop, val, 'important'); } catch {}
+  }
+  function ovUnstyle() {
+    ovStyled.forEach((rec, el) => {
+      Object.keys(rec).forEach((prop) => {
+        try {
+          const v = rec[prop][0];
+          if (v) el.style.setProperty(prop, v, rec[prop][1]);
+          else el.style.removeProperty(prop);
+        } catch {}
+      });
+    });
+    ovStyled.clear();
+  }
+  function ovChatShow() {
+    if (ovChatEl && ovChatSaved) {
+      try {
+        if (ovChatSaved[0]) ovChatEl.style.setProperty('display', ovChatSaved[0], ovChatSaved[1]);
+        else ovChatEl.style.removeProperty('display');
+      } catch {}
+    }
+    ovChatEl = null;
+    ovChatSaved = null;
+  }
+  // The panel and chat share one slot. Hiding the chat here keeps the visible
+  // panel native while restoring whatever display YouTube itself had set.
+  function ovChatHide(hide) {
+    if (!hide) { ovChatShow(); return; }
+    const c = document.querySelector('#chat-container');
+    const sec = document.querySelector('#secondary');
+    if (!c || !sec || !sec.contains(c)) { ovChatShow(); return; }
+    if (ovChatEl && ovChatEl !== c) ovChatShow();
+    if (!ovChatSaved) {
+      ovChatEl = c;
+      ovChatSaved = [c.style.getPropertyValue('display'), c.style.getPropertyPriority('display')];
+    }
+    try { c.style.setProperty('display', 'none', 'important'); } catch {}
+  }
+  function ovGlassEnsure() {
+    try {
+      if (ovGlassEl && ovGlassEl.isConnected) return;
+      ovGlassEl = document.getElementById(OV_GLASS_ID);
+      if (!ovGlassEl) {
+        ovGlassEl = document.createElement('style');
+        ovGlassEl.id = OV_GLASS_ID;
+        ovGlassEl.textContent = OV_GLASS_CSS;
+        (document.head || document.documentElement).appendChild(ovGlassEl);
+      }
+    } catch {}
+  }
+  function ovChatGlassApply(iframe) {
+    let doc = null;
+    try { doc = iframe && iframe.contentDocument; } catch {}
+    if (!doc || !doc.head || doc.getElementById(OV_CHAT_GLASS_ID)) return;
+    try {
+      const s = doc.createElement('style');
+      s.id = OV_CHAT_GLASS_ID;
+      s.textContent = OV_CHAT_GLASS_CSS;
+      doc.head.appendChild(s);
+    } catch {}
+  }
+  function ovChatGlassLoad() { ovChatGlassApply(ovChatFrame); }
+  function ovChatGlassRemove(iframe) {
+    try {
+      const doc = iframe && iframe.contentDocument;
+      const s = doc && doc.getElementById(OV_CHAT_GLASS_ID);
+      if (s) s.remove();
+    } catch {}
+  }
+  function ovChatGlassWatch(iframe) {
+    if (ovChatFrame !== iframe) {
+      if (ovChatFrame) {
+        try { ovChatFrame.removeEventListener('load', ovChatGlassLoad); } catch {}
+        ovChatGlassRemove(ovChatFrame);
+      }
+      ovChatFrame = iframe || null;
+      if (ovChatFrame) {
+        try { ovChatFrame.addEventListener('load', ovChatGlassLoad); } catch {}
+      }
+    }
+    ovChatGlassApply(ovChatFrame);
+  }
+  function ovGlassClear() {
+    if (ovGlassEl) { try { ovGlassEl.remove(); } catch {} ovGlassEl = null; }
+    if (ovChatFrame) {
+      try { ovChatFrame.removeEventListener('load', ovChatGlassLoad); } catch {}
+      ovChatGlassRemove(ovChatFrame);
+      ovChatFrame = null;
+    }
+  }
+  // The sidebar must look like a lone player attachment: hide the related rail
+  // and other sidebar modules but leave the native panels and chat in place.
+  function ovHideSidebar() {
+    let n = 0;
+    try {
+      const inner = document.querySelector('#secondary-inner');
+      if (!inner) return 0;
+      [...inner.children].forEach((el) => {
+        if (el.id === 'panels' || el.id === 'chat-container') return;
+        if (ovSaved.has(el)) return;
+        ovSaved.set(el, el.style.display);
+        el.style.display = 'none';
+        n++;
+      });
+    } catch {}
+    return n;
+  }
+  // The watch metadata box also contains the merch shelf, which otherwise
+  // leaves a product row between the chapters and the comments. Keep the
+  // comments box itself untouched so its lazy loader still sees it.
+  function ovHideBelowExtras() {
+    let n = 0;
+    const below = document.querySelector('#below');
+    if (!below) return 0;
+    [...below.children].forEach((el) => {
+      if (el === ovSlot) return;
+      const shelf = el.id === 'shopping-timely-shelf';
+      const meta = !!el.querySelector('ytd-watch-metadata');
+      if (!shelf && !meta) return;
+      if (ovSaved.has(el)) return;
+      ovSaved.set(el, el.style.display);
+      el.style.display = 'none';
+      n++;
+    });
+    return n;
+  }
+  function ovEnsureSlot() {
+    let below = null;
+    try { below = document.querySelector('#below'); } catch {}
+    if (!below) return null;
+    if (!ovSlot) ovSlot = document.getElementById(OV_SLOT_ID);
+    if (!ovSlot) {
+      ovSlot = document.createElement('div');
+      ovSlot.id = OV_SLOT_ID;
+      ovSlot.style.width = '100%';
+      ovSlot.style.margin = '12px 0 16px';
+    }
+    if (below.firstElementChild !== ovSlot) {
+      try { below.insertBefore(ovSlot, below.firstElementChild); }
+      catch { try { below.appendChild(ovSlot); } catch {} }
+    }
+    return ovSlot;
+  }
+  // The sidebar is absolute over the slot so the chat iframe never leaves its
+  // native parent. The slot height is the sidebar height, which keeps comments
+  // after whatever panel or chat is currently showing.
+  function ovPositionSidebar() {
+    if (!ovSlot) return false;
+    const cols = document.querySelector('#columns');
+    const sec = document.querySelector('#secondary');
+    if (!cols || !sec) return false;
+    ovStyle(cols, 'position', 'relative');
+    ovStyle(sec, 'position', 'absolute');
+    const sr = ovSlot.getBoundingClientRect();
+    const cr = cols.getBoundingClientRect();
+    const w = Math.round(sr.width);
+    if (w < 100) return false;
+    ovStyle(sec, 'top', Math.round(sr.top - cr.top + cols.scrollTop) + 'px');
+    ovStyle(sec, 'left', Math.round(sr.left - cr.left + cols.scrollLeft) + 'px');
+    ovStyle(sec, 'width', w + 'px');
+    const h = Math.ceil(sec.getBoundingClientRect().height);
+    // A fully empty slot lets its top and bottom margins collapse through,
+    // which shifts the slot when a panel opens and leaves the sidebar behind.
+    // One pixel keeps the slot's top stable while still closing the gap.
+    ovStyle(ovSlot, 'height', Math.max(1, h) + 'px');
+    return true;
+  }
+  function ovWatchLayout() {
+    if (typeof ResizeObserver === 'undefined') return;
+    const player = document.querySelector('#player');
+    const sec = document.querySelector('#secondary');
+    if (ovRO && ovROPlayer === player && ovROSec === sec) return;
+    if (ovRO) { try { ovRO.disconnect(); } catch {} }
+    ovRO = new ResizeObserver(ovSyncSoon);
+    ovROPlayer = player;
+    ovROSec = sec;
+    try { if (player) ovRO.observe(player); } catch {}
+    try { if (sec) ovRO.observe(sec); } catch {}
+  }
+  function ovStyleLayout() {
+    ovGlassEnsure();
+    const sec = document.querySelector('#secondary');
+    if (sec) {
+      ovStyle(sec, 'max-width', 'none');
+      ovStyle(sec, 'margin', '0');
+      ovStyle(sec, 'padding', '0');
+      ovStyle(sec, 'display', 'block');
+      ovStyle(sec, 'height', 'auto');
+      ovStyle(sec, 'min-height', '0');
+    }
+    const inner = document.querySelector('#secondary-inner');
+    if (inner) {
+      ovStyle(inner, 'width', '100%');
+      ovStyle(inner, 'max-width', 'none');
+      ovStyle(inner, 'margin', '0');
+      ovStyle(inner, 'padding', '0');
+    }
+    const panels = document.querySelector('#panels');
+    if (panels) {
+      ovStyle(panels, 'width', '100%');
+      ovStyle(panels, 'display', 'block');
+      panels.querySelectorAll(OV_PANEL).forEach((p) => ovStyle(p, 'width', '100%'));
+    }
+    const chat = document.querySelector('#chat-container');
+    let iframe = null;
+    if (chat) {
+      ovStyle(chat, 'width', '100%');
+      ovStyle(chat, 'height', 'auto');
+      ovStyle(chat, 'min-height', '0');
+      const frame = chat.querySelector('ytd-live-chat-frame#chat, ytd-live-chat-frame');
+      if (frame) {
+        ovStyle(frame, 'width', '100%');
+        ovStyle(frame, 'height', '420px');
+        ovStyle(frame, 'min-height', '0');
+      }
+      iframe = chat.querySelector('#chatframe');
+      if (iframe) ovStyle(iframe, 'height', '100%');
+    }
+    ovChatGlassWatch(iframe);
+  }
+  function ovSetPanelState(slot) {
+    const sec = document.querySelector('#secondary');
+    const open = !!(sec && sec.querySelector(OV_OPEN));
+    if (slot) slot.toggleAttribute('data-panel-open', open);
+    ovChatHide(open);
+  }
+  function ovTeardown() {
+    const had = !!ovSlot || ovStyled.size > 0;
+    if (ovRO) { try { ovRO.disconnect(); } catch {} ovRO = null; ovROPlayer = null; ovROSec = null; }
+    ovGlassClear();
+    ovChatShow();
+    ovUnstyle();
+    if (ovSlot) { try { ovSlot.remove(); } catch {} }
+    ovSlot = null;
+    ovWasActive = false;
+    return had;
+  }
+  function ovRouteReset() {
+    ovGlassClear();
+    ovChatShow();
   }
   function ovSyncSoon() {
     if (ovTimer) return;
@@ -390,19 +699,41 @@
       // observer there.
       const active = cfg.onlyVideo && isWatchPage() && !location.pathname.startsWith('/shorts/');
       if (!active) {
-        ovRestore(null);
         if (ovObs) { try { ovObs.disconnect(); } catch {} ovObs = null; }
+        const moved = ovTeardown();
+        const restored = ovRestore(null);
+        if (moved || restored) ovNudge();
         return;
       }
+      const fresh = !ovWasActive;
+      ovWasActive = true;
       // Bound the map: nodes YouTube dropped are gone for good.
       ovSaved.forEach((v, el) => { if (!el.isConnected) ovSaved.delete(el); });
-      ovHide(OV_BASE);
-      if (cfg.ovHideComments) ovHide(OV_COMMENTS);
-      else ovRestore(OV_COMMENTS);
+      let changed = ovHide(OV_BASE);
+      changed += ovHideSidebar();
+      changed += ovHideBelowExtras();
+      if (cfg.ovHideComments) changed += ovHide(OV_COMMENTS);
+      else changed += ovRestore(OV_COMMENTS);
+      const slot = ovEnsureSlot();
+      if (slot) {
+        const sec = document.querySelector('#secondary');
+        if (sec) {
+          ovStyleLayout();
+          ovPositionSidebar();
+          ovSetPanelState(slot);
+        }
+        ovWatchLayout();
+      }
       if (!ovObs) {
         ovObs = new MutationObserver(ovSyncSoon);
-        ovObs.observe(document.documentElement, { childList: true, subtree: true });
+        ovObs.observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['visibility'],
+        });
       }
+      if (changed || fresh) ovNudge();
     } catch {}
   }
   try {
@@ -413,7 +744,7 @@
   // apply ran while isWatchPage() was false and armed nothing. Without this the
   // glow only appeared once the popup wrote storage and re-triggered refresh().
   // Only Video rides the same two signals for the same reason.
-  function onRoute() { try { ambApply(); } catch {} try { ovApply(); } catch {} }
+  function onRoute() { try { ambApply(); } catch {} try { ovRouteReset(); ovApply(); } catch {} }
   try { document.addEventListener('yt-navigate-finish', onRoute); } catch {}
   let ambLastUrl = '';
   try { ambLastUrl = location.href; } catch {}
@@ -442,6 +773,7 @@
   try {
     document.addEventListener('scroll', ambSyncSoon, { passive: true, capture: true });
     window.addEventListener('resize', ambSyncSoon);
+    window.addEventListener('resize', ovSyncSoon);
   } catch {}
   // A click in the toolbar popup is not a gesture in this document, so this
   // listener is the only thing that can ever unlock the AudioContext here.
