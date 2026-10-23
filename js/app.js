@@ -131,7 +131,15 @@ function hideCsel(){[...copen].forEach(d=>{const e=creg.get(d);if(e)e.close();})
 // menus portal to body as position:fixed, open on the roomier side with ~4 items
 // visible, cap height to the free space, follow their anchor through scroll and
 // resize, and close once the anchor leaves the DOM or its hidden pane.
-function cselPlace(drop){const e=creg.get(drop);if(!e)return;drop.style.position='fixed';drop.style.right='auto';drop.style.bottom='auto';const r=e.btn.getBoundingClientRect();const vw=window.innerWidth,vh=window.innerHeight;if(!r.width||r.bottom<0||r.top>vh||r.right<0||r.left>vw){e.close();return;}const need=Math.min(drop.scrollHeight||120,250);const min=Math.min(need,160);const below=vh-14-r.bottom,above=r.top-14;let h,top;if(below>=min||(below<min&&above<min&&below>=above)){h=Math.min(need,Math.max(below,80));top=r.bottom+6;}else{h=Math.min(need,above);top=r.top-6-h;}const w=Math.max(r.width,180);drop.style.left=Math.min(Math.max(8,r.left),vw-8-w)+'px';drop.style.top=top+'px';drop.style.width=w+'px';drop.style.maxHeight=h+'px';}
+function cselPlace(drop){const e=creg.get(drop);if(!e)return;drop.style.position='fixed';drop.style.right='auto';drop.style.bottom='auto';const r=e.btn.getBoundingClientRect();const vw=window.innerWidth,vh=window.innerHeight;
+// Flip/size against the modal card the trigger lives in, not the viewport: a
+// menu that fits the window can still hang past the card onto the wallpaper.
+// Triggers outside any visible modal fall back to the viewport as before.
+const mm=e.btn.closest('.modal'),ms=mm?getComputedStyle(mm):null,mb=mm?mm.getBoundingClientRect():null;
+const inCard=mm&&ms.display!=='none'&&mb.height>80&&mb.width>80;
+const bt=inCard?mb.top:8,bb=inCard?mb.bottom:vh,x0=inCard?mb.left:8,x1=inCard?mb.right:vw-8;
+if(!r.width||r.bottom<0||r.top>vh||r.right<0||r.left>vw||(inCard&&(r.top>bb||r.bottom<bt))){e.close();return;}
+const need=Math.min(drop.scrollHeight||120,250);const min=Math.min(need,160);const below=bb-14-r.bottom,above=r.top-14-bt;let h,top;if(below>=min||(below<min&&above<min&&below>=above)){h=Math.min(need,Math.max(below,80));top=r.bottom+6;if(top+h>bb)h=bb-top;}else{h=Math.min(need,above);top=r.top-6-h;}const w=Math.max(r.width,180);drop.style.left=Math.min(Math.max(x0,r.left),x1-w)+'px';drop.style.top=top+'px';drop.style.width=w+'px';drop.style.maxHeight=h+'px';}
 function cselOpen(btn,drop){if(drop.parentElement!==document.body)document.body.appendChild(drop);creg.set(drop,{btn,close:()=>{drop.classList.remove('open');copen.delete(drop);btn.setAttribute('aria-expanded','false');}});drop.classList.add('open');drop.style.zIndex='9999';btn.setAttribute('aria-expanded','true');copen.add(drop);cselPlace(drop);}
 function cselGlue(){if(!copen.size||cselRaf)return;cselRaf=requestAnimationFrame(()=>{cselRaf=0;[...copen].forEach(d=>{const e=creg.get(d);if(!e){copen.delete(d);return;}const b=e.btn;if(!b.isConnected||getComputedStyle(b).display==='none'){e.close();return;}cselPlace(d);});});}
 document.addEventListener('scroll',cselGlue,true);
