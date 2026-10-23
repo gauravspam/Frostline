@@ -138,12 +138,27 @@
     if (wfsOn) theaterOn(); else theaterOff();
     de.classList.toggle('frostline-th-wfs', wfsOn);
     de.classList.toggle('frostline-th', !!cfg.enabled);
+    setAr();
     // Only on the rising edge: applyAll also runs on every route change and on
     // native fullscreen transitions, which would otherwise re-toast constantly.
     if (wfsOn && !wasWfs) hintShow(); else if (!wfsOn && wasWfs) hintHide();
     wasWfs = wfsOn;
     try { window.dispatchEvent(new Event('resize')); } catch {}
   }
+  // The windowed player box is sized from --frostline-ar (worker CSS). The
+  // video's real dimensions feed the variable so 4:3 and portrait videos get
+  // a window that hugs their shape; until metadata lands the 16:9 default in
+  // the CSS keeps first paint sane. 'loadedmetadata' fires for each new video
+  // (SPA navigations included) and 'resize' for quality switches.
+  function setAr() {
+    try {
+      const v = document.querySelector('#movie_player video.html5-main-video') || document.querySelector('video');
+      const ar = (v && v.videoWidth && v.videoHeight) ? (v.videoWidth / v.videoHeight) : (16 / 9);
+      document.documentElement.style.setProperty('--frostline-ar', String(ar));
+    } catch {}
+  }
+  try { document.addEventListener('loadedmetadata', setAr, true); } catch {}
+  try { document.addEventListener('resize', setAr, true); } catch {}
   function onNativeFs() {
     try { tipHide(); } catch {}
     try { applyAll(); } catch {}
@@ -370,6 +385,7 @@
     tipHide();
     hintHide();
     try { document.documentElement.classList.remove('frostline-th-wfs', 'frostline-th'); } catch {}
+    try { document.documentElement.style.removeProperty('--frostline-ar'); } catch {}
     try { const a = document.getElementById('frostline-th-wfs'); if (a) a.remove(); } catch {}
     try { const s = document.getElementById('frostline-th-str'); if (s) s.remove(); } catch {}
     const v = document.querySelector('video');

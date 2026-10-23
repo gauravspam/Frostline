@@ -333,9 +333,12 @@ function theaterCss(cfg){
   // viewport width also includes the vertical scrollbar gutter.
   if(cfg.wfs)css+='html.frostline-th-wfs,html.frostline-th-wfs body{overflow:hidden!important;height:100%!important;margin:0!important;padding:0!important}';
   if(cfg.wfs)css+='html.frostline-th-wfs #primary,html.frostline-th-wfs #player-container-outer,html.frostline-th-wfs ytd-watch-flexy{width:100%!important;max-width:100%!important}';
-  // inset:0 against a fixed root sizes the player to the viewport box without
-  // pulling in the scrollbar gutter that a viewport width would add.
-  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player{position:fixed!important;inset:0!important;width:auto!important;height:auto!important;transform:none!important;z-index:2147483647!important}';
+  // inset:0 spanned the whole viewport, which is right only for 16:9: anything
+  // else letterboxed inside a giant black frame. Size the box to the video's
+  // own aspect (theater.js feeds --frostline-ar from videoWidth/videoHeight,
+  // 16:9 until metadata lands) with a 24px gutter, centered like real
+  // fullscreen instead of covering everything edge to edge.
+  if(cfg.wfs)css+='html.frostline-th-wfs #movie_player{position:fixed!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;width:min(calc(100vw - 24px),calc((100vh - 24px)*var(--frostline-ar,1.7778)))!important;height:min(calc(100vh - 24px),calc((100vw - 24px)/var(--frostline-ar,1.7778)))!important;max-width:none!important;max-height:none!important;z-index:2147483647!important}';
   // YouTube sizes the inner video layer from the player's own aspect-ratio box,
   // so pinning the player alone leaves the frame letterboxed and offset inside
   // the viewport. Let the video layer fill the box and keep the frame intact.
